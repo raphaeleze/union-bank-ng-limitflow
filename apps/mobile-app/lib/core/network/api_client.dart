@@ -75,11 +75,11 @@ class ApiClient {
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.sendTimeout:
       case DioExceptionType.receiveTimeout:
-        return const ApiException("This is taking longer than expected. Please try again.");
+        return const ApiException('This is taking longer than expected. Please try again.');
       case DioExceptionType.connectionError:
         return const ApiException("We couldn't reach LimitFlow. Check your connection and try again.");
       default:
-        return const ApiException("Something went wrong. Please try again.");
+        return const ApiException('Something went wrong. Please try again.');
     }
   }
 }

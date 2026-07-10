@@ -41,7 +41,7 @@ abstract class AppTheme {
       useMaterial3: true,
       colorScheme: colorScheme,
       fontFamily: 'Roboto',
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius)),
         margin: EdgeInsets.zero,

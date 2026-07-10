@@ -31,7 +31,7 @@ class TimelineTile extends StatelessWidget {
         ? AppColors.accent
         : isCurrent
             ? AppColors.primary
-            : AppColors.lightTextSecondary.withOpacity(0.4);
+            : AppColors.lightTextSecondary.withValues(alpha: 0.4);
 
     return IntrinsicHeight(
       child: Row(
@@ -61,7 +61,7 @@ class TimelineTile extends StatelessWidget {
                   child: Container(
                     width: 2,
                     margin: const EdgeInsets.symmetric(vertical: 2),
-                    color: color.withOpacity(isComplete ? 1 : 0.3),
+                    color: color.withValues(alpha: isComplete ? 1 : 0.3),
                   ),
                 ),
             ],

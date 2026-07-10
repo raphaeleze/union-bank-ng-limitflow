@@ -138,7 +138,7 @@ class _MessageBubble extends StatelessWidget {
         decoration: BoxDecoration(
           color: color,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)],
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8)],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -147,7 +147,7 @@ class _MessageBubble extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               message.time,
-              style: TextStyle(color: textColor.withOpacity(0.7), fontSize: 11),
+              style: TextStyle(color: textColor.withValues(alpha: 0.7), fontSize: 11),
             ),
           ],
         ),

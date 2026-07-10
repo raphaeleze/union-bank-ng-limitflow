@@ -267,6 +267,7 @@ class _ChooseLimitStep extends StatelessWidget {
     return _WizardBody(
       title: 'How much do you need?',
       subtitle: 'Your current daily limit is ${CurrencyFormatter.format(currentLimit)}.',
+      onNext: onNext,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -294,7 +295,6 @@ class _ChooseLimitStep extends StatelessWidget {
           ),
         ],
       ),
-      onNext: onNext,
     );
   }
 }
@@ -322,6 +322,7 @@ class _ReasonStepState extends State<_ReasonStep> {
     return _WizardBody(
       title: "What's this for?",
       subtitle: 'A short reason helps us review your request faster.',
+      onNext: widget.controller.text.trim().isEmpty ? null : widget.onNext,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -344,7 +345,6 @@ class _ReasonStepState extends State<_ReasonStep> {
           ),
         ],
       ),
-      onNext: widget.controller.text.trim().isEmpty ? null : widget.onNext,
     );
   }
 }
@@ -375,6 +375,8 @@ class _ReviewStep extends StatelessWidget {
     return _WizardBody(
       title: 'Review your request',
       subtitle: "We'll send a one-time code to verify it's really you.",
+      onNext: null,
+      customAction: PrimaryButton(label: 'Send verification code', onPressed: onSubmit, isLoading: isSubmitting),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -395,8 +397,6 @@ class _ReviewStep extends StatelessWidget {
           ],
         ],
       ),
-      onNext: null,
-      customAction: PrimaryButton(label: 'Send verification code', onPressed: onSubmit, isLoading: isSubmitting),
     );
   }
 }
@@ -447,7 +447,6 @@ class _OtpStep extends StatelessWidget {
       title: 'Enter your verification code',
       subtitle: 'For this demo there\'s no real SMS gateway — open the Notifications '
           'tab to find the 6-digit code we just sent.',
-      child: OtpInput(length: 6, onChanged: onCodeChanged),
       onNext: null,
       customAction: Column(
         children: [
@@ -458,6 +457,7 @@ class _OtpStep extends StatelessWidget {
           PrimaryButton(label: 'Verify code', onPressed: onVerify, isLoading: isSubmitting),
         ],
       ),
+      child: OtpInput(length: 6, onChanged: onCodeChanged),
     );
   }
 }
@@ -478,9 +478,6 @@ class _BiometricStep extends StatelessWidget {
     return _WizardBody(
       title: 'Confirm with biometrics',
       subtitle: 'One last check to make sure this is really you.',
-      child: Center(
-        child: Icon(Icons.fingerprint, size: 96, color: Theme.of(context).colorScheme.primary),
-      ),
       onNext: null,
       customAction: Column(
         children: [
@@ -490,6 +487,9 @@ class _BiometricStep extends StatelessWidget {
           ],
           PrimaryButton(label: 'Confirm identity', onPressed: onConfirm, isLoading: isSubmitting),
         ],
+      ),
+      child: Center(
+        child: Icon(Icons.fingerprint, size: 96, color: Theme.of(context).colorScheme.primary),
       ),
     );
   }
