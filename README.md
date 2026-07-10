@@ -131,20 +131,22 @@ I want to answer one question:
 
 ---
 
-# What this project will demonstrate
 
-Some of the ideas explored here include:
 
-* In-app transfer limit management
-* Secure biometric approvals
-* OTP-based verification
-* Digital authorization flows
-* Intelligent identity verification
-* Case tracking with real-time status updates
-* Unified customer support
-* Elimination of redundant paperwork
-* Clear audit trails
-* Modern API-first architecture
+# What this project demonstrates
+
+In-app transfer limit management, secure biometric approvals, OTP-based verification,
+intelligent risk-based routing, case tracking with real-time status updates, unified
+support, and clear audit trails — built as three working applications, not mockups:
+
+* **[LimitFlow mobile app](apps/mobile-app)** (Flutter) — the primary product. A customer
+  requests a transfer-limit increase through a five-step flow (choose limit → reason →
+  review → OTP → biometric) and either gets an instant decision or a tracked status while
+  it's reviewed.
+* **[LimitFlow backend](apps/backend-api)** (Spring Boot) — Clean Architecture, JWT auth, a
+  strategy-pattern risk engine, and full audit logging behind a REST API.
+* **[LimitFlow employee portal](apps/employee-portal)** (Next.js) — what a support agent or
+  manager sees when the risk engine routes a request to manual review.
 
 ---
 
@@ -160,6 +162,82 @@ Some of the ideas explored here include:
 | PDF forms                 | Pre-filled digital forms               |
 | Manual processing         | Automated approval where policy allows |
 | No visibility             | Real-time progress tracking            |
+
+---
+
+# Try it
+
+## Everything except the mobile app, via Docker
+
+```bash
+cd docker
+docker compose up --build
+```
+
+- Backend API: http://localhost:8080 (Swagger UI at `/swagger-ui.html`)
+- Employee portal: http://localhost:3000
+
+Demo accounts (password `Password123!` for all three):
+
+| Role | Email |
+|---|---|
+| Customer | `customer@limitflow.demo` |
+| Support agent | `support@limitflow.demo` |
+| Manager | `manager@limitflow.demo` |
+
+The seeded customer starts at a ₦200,000 daily limit with ₦180,000 used today, and already
+has a ₦500,000 request sitting in the support queue — log in as the customer to see its
+status, or as support/manager to review it.
+
+## The mobile app
+
+Needs the backend running (via Docker above, or `apps/backend-api` directly) and a local
+Flutter SDK — see [`apps/mobile-app/README.md`](apps/mobile-app/README.md) for the one-time
+platform setup this environment couldn't do without Flutter installed.
+
+```bash
+cd apps/mobile-app
+flutter create --org com.limitflow --project-name limitflow_mobile .
+flutter pub get
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8080/api   # Android emulator
+```
+
+---
+
+# Repository structure
+
+```
+external-union-bank-ng/
+├── apps/
+│   ├── mobile-app/          Flutter — the customer-facing app (primary product)
+│   ├── backend-api/         Spring Boot — REST API, risk engine, audit log
+│   └── employee-portal/     Next.js — support/manager review console
+├── docs/
+│   ├── architecture/        System diagram, Clean Architecture per app, why a monorepo
+│   ├── system-design/       Risk engine rules, the request state machine
+│   ├── api/                 Endpoint reference (mirrors the backend's Swagger UI)
+│   └── ux/                  The customer and staff journeys, mapped step by step
+├── docker/
+│   └── docker-compose.yml   postgres + backend-api + employee-portal
+└── README.md                 you are here
+```
+
+Each app has its own README with setup details, screens/pages, and what's deliberately
+mocked or out of scope. `docs/` is where the cross-app decisions live — why the monorepo,
+why the risk engine is synchronous, what the state machine looks like end to end.
+
+---
+
+# What's intentionally out of scope
+
+This is a demonstration of one customer journey, not a banking platform. No loans, cards,
+investments, statements, or general-purpose transfers — see each app's README for
+what else was deliberately left out (refresh tokens, real SMS/push delivery, real
+biometric hardware integration, delegated/shared account access — the "I'm not the account
+owner" dead end from the story above is a real, harder problem this demo doesn't attempt to
+solve). None of these are missing by oversight; each is a scope decision made to keep the
+one journey this project demonstrates sharp rather than build a shallow version of an
+entire bank.
 
 ---
 

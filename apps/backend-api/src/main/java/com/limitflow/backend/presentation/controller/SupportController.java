@@ -34,6 +34,11 @@ public class SupportController {
                 .toList();
     }
 
+    @GetMapping("/{id}")
+    public LimitRequestResponse get(@PathVariable UUID id) {
+        return LimitRequestResponse.from(supportReviewService.getForReview(id));
+    }
+
     @PostMapping("/{id}/approve")
     public LimitRequestResponse approve(@AuthenticationPrincipal User user, @PathVariable UUID id,
                                          @RequestBody(required = false) ReviewActionRequest request) {

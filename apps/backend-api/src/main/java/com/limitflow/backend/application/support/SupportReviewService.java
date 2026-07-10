@@ -41,6 +41,13 @@ public class SupportReviewService {
         return limitRequestRepository.findByRiskLevelAndStatusInOrderByCreatedAtAsc(scope, REVIEWABLE);
     }
 
+    /** Unlike {@link #reviewable}, this isn't limited to UNDER_REVIEW — staff can look
+     * up a request's detail regardless of whether it's already been decided. */
+    public LimitRequest getForReview(UUID requestId) {
+        return limitRequestRepository.findById(requestId)
+                .orElseThrow(() -> new NotFoundException("Limit request not found"));
+    }
+
     public LimitRequest approve(User staff, UUID requestId, String note) {
         LimitRequest limitRequest = reviewable(requestId);
         Account account = limitRequest.getAccount();

@@ -1,0 +1,6 @@
+# Shell scripts must keep LF endings regardless of checkout platform — CRLF
+# breaks the `#!/bin/sh` shebang when these run inside a Linux Docker build
+# (as happened with apps/backend-api/mvnw on a Windows checkout).
+*.sh text eol=lf
+mvnw text eol=lf
+gradlew text eol=lf
