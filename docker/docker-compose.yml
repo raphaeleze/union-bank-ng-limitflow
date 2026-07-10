@@ -1,0 +1,33 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: limitflow
+      POSTGRES_USER: limitflow
+      POSTGRES_PASSWORD: limitflow
+    ports:
+      - "5432:5432"
+    volumes:
+      - limitflow-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U limitflow -d limitflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend-api:
+    build:
+      context: ../apps/backend-api
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/limitflow
+      DB_USERNAME: limitflow
+      DB_PASSWORD: limitflow
+      JWT_SECRET: local-development-secret-change-me-before-any-real-deployment
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  limitflow-postgres-data:

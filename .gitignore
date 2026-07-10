@@ -1,0 +1,26 @@
+# Backend (Java / Maven)
+apps/backend-api/target/
+*.class
+
+# Mobile (Flutter/Dart)
+apps/mobile-app/.dart_tool/
+apps/mobile-app/.flutter-plugins
+apps/mobile-app/.flutter-plugins-dependencies
+apps/mobile-app/.packages
+apps/mobile-app/build/
+apps/mobile-app/ios/Pods/
+
+# Employee portal (Node/Next.js)
+apps/employee-portal/node_modules/
+apps/employee-portal/.next/
+apps/employee-portal/out/
+
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+
+# Env files
+.env
+.env.local
