@@ -29,5 +29,18 @@ services:
       postgres:
         condition: service_healthy
 
+  employee-portal:
+    build:
+      context: ../apps/employee-portal
+      args:
+        # Baked into the client bundle at build time (see Dockerfile) — must be
+        # an address reachable from the browser, not the "backend-api" service
+        # name, which only resolves inside the compose network.
+        NEXT_PUBLIC_API_BASE_URL: http://localhost:8080/api
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend-api
+
 volumes:
   limitflow-postgres-data:

@@ -7,6 +7,8 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.resolve(__dirname),
   },
+  // Minimal, self-contained build output for the Docker image.
+  output: "standalone",
 };
 
 export default nextConfig;
