@@ -4,8 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/widgets/error_state.dart';
 import '../../../core/widgets/info_card.dart';
-import '../../../core/widgets/loading_overlay.dart';
 import '../../../core/widgets/risk_badge.dart';
+import '../../../core/widgets/skeleton_box.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../../core/widgets/timeline_tile.dart';
 import '../application/limit_request_repository.dart';
@@ -29,7 +29,7 @@ class RequestStatusScreen extends ConsumerWidget {
       appBar: AppBar(title: const Text('Request status')),
       body: SafeArea(
         child: requestAsync.when(
-          loading: () => const LoadingOverlay(),
+          loading: () => const _RequestStatusSkeleton(),
           error: (error, _) => ErrorState(
             message: "We couldn't load this request.",
             onRetry: () => ref.invalidate(_requestByIdProvider(requestId)),
@@ -92,6 +92,46 @@ class RequestStatusScreen extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _RequestStatusSkeleton extends StatelessWidget {
+  const _RequestStatusSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        const InfoCard(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              SkeletonBox(width: 140, height: 28),
+              SkeletonBox(width: 90, height: 24, borderRadius: 999),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+        InfoCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: List.generate(4, (index) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 24),
+                child: Row(
+                  children: [
+                    const SkeletonBox(width: 26, height: 26, borderRadius: 13),
+                    const SizedBox(width: 14),
+                    SkeletonBox(width: 120 + (index.isEven ? 20 : 0), height: 14),
+                  ],
+                ),
+              );
+            }),
+          ),
+        ),
+      ],
     );
   }
 }

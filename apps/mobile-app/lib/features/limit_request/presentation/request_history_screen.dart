@@ -7,7 +7,7 @@ import '../../../core/router/app_router.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/widgets/error_state.dart';
 import '../../../core/widgets/info_card.dart';
-import '../../../core/widgets/loading_overlay.dart';
+import '../../../core/widgets/skeleton_list_tile.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../application/limit_request_repository.dart';
 import '../domain/limit_request_model.dart';
@@ -29,7 +29,7 @@ class RequestHistoryScreen extends ConsumerWidget {
         child: RefreshIndicator(
           onRefresh: () => ref.refresh(requestHistoryProvider.future),
           child: historyAsync.when(
-            loading: () => const LoadingOverlay(),
+            loading: () => const SkeletonList(),
             error: (error, _) => ErrorState(
               message: "We couldn't load your requests.",
               onRetry: () => ref.invalidate(requestHistoryProvider),

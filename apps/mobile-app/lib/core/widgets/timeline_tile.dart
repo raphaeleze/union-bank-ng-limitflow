@@ -27,11 +27,12 @@ class TimelineTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final isComplete = step.status == 'COMPLETE';
     final isCurrent = step.status == 'CURRENT';
+    final secondaryColor = Theme.of(context).textTheme.bodyMedium?.color ?? AppColors.lightTextSecondary;
     final color = isComplete
         ? AppColors.accent
         : isCurrent
             ? AppColors.primary
-            : AppColors.lightTextSecondary.withValues(alpha: 0.4);
+            : secondaryColor.withValues(alpha: 0.4);
 
     return IntrinsicHeight(
       child: Row(
@@ -73,7 +74,7 @@ class TimelineTile extends StatelessWidget {
               step.label,
               style: TextStyle(
                 fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w500,
-                color: isCurrent || isComplete ? null : AppColors.lightTextSecondary,
+                color: isCurrent || isComplete ? null : secondaryColor,
               ),
             ),
           ),

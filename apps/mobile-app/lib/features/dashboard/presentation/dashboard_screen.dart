@@ -8,9 +8,9 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/widgets/error_state.dart';
 import '../../../core/widgets/info_card.dart';
-import '../../../core/widgets/loading_overlay.dart';
 import '../../../core/widgets/primary_button.dart';
 import '../../../core/widgets/secondary_button.dart';
+import '../../../core/widgets/skeleton_box.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../limit_request/domain/limit_request_model.dart';
 import '../application/dashboard_providers.dart';
@@ -35,7 +35,7 @@ class DashboardScreen extends ConsumerWidget {
         child: RefreshIndicator(
           onRefresh: () => ref.refresh(currentLimitProvider.future),
           child: currentLimitAsync.when(
-            loading: () => const LoadingOverlay(message: 'Loading your dashboard…'),
+            loading: () => const _DashboardSkeleton(),
             error: (error, _) => ErrorState(
               message: "We couldn't load your dashboard. Pull down to try again.",
               onRetry: () => ref.invalidate(currentLimitProvider),
@@ -126,7 +126,7 @@ class _ProgressBar extends StatelessWidget {
       child: LinearProgressIndicator(
         value: ratio,
         minHeight: 8,
-        backgroundColor: AppColors.lightBorder,
+        backgroundColor: Theme.of(context).dividerColor,
         valueColor: AlwaysStoppedAnimation(ratio > 0.85 ? AppColors.warning : AppColors.primary),
       ),
     );
@@ -194,6 +194,62 @@ class _ActiveRequestCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _DashboardSkeleton extends StatelessWidget {
+  const _DashboardSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(20),
+      children: const [
+        SkeletonBox(width: 160, height: 28),
+        SizedBox(height: 8),
+        SkeletonBox(width: 200, height: 14),
+        SizedBox(height: 24),
+        InfoCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SkeletonBox(width: 140, height: 14),
+              SizedBox(height: 10),
+              SkeletonBox(width: 180, height: 32),
+              SizedBox(height: 20),
+              SkeletonBox(height: 8, borderRadius: 4),
+              SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SkeletonBox(width: 80, height: 12),
+                        SizedBox(height: 6),
+                        SkeletonBox(width: 100, height: 18),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SkeletonBox(width: 80, height: 12),
+                        SizedBox(height: 6),
+                        SkeletonBox(width: 100, height: 18),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: 20),
+        SkeletonBox(height: 52, borderRadius: 14),
+      ],
     );
   }
 }

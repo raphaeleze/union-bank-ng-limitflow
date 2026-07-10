@@ -9,7 +9,7 @@ class RiskBadge extends StatelessWidget {
 
   final String? riskLevel;
 
-  Color _color() {
+  Color _color(BuildContext context) {
     switch (riskLevel) {
       case 'HIGH':
         return AppColors.error;
@@ -18,14 +18,14 @@ class RiskBadge extends StatelessWidget {
       case 'LOW':
         return AppColors.accent;
       default:
-        return AppColors.lightTextSecondary;
+        return Theme.of(context).textTheme.bodyMedium?.color ?? AppColors.lightTextSecondary;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     if (riskLevel == null) return const SizedBox.shrink();
-    final color = _color();
+    final color = _color(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(

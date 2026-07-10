@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/error_state.dart';
 import '../../../core/widgets/info_card.dart';
-import '../../../core/widgets/loading_overlay.dart';
+import '../../../core/widgets/skeleton_list_tile.dart';
 import '../application/notifications_repository.dart';
 import '../domain/notification_model.dart';
 
@@ -21,7 +21,7 @@ class NotificationsScreen extends ConsumerWidget {
         child: RefreshIndicator(
           onRefresh: () => ref.refresh(notificationsProvider.future),
           child: notificationsAsync.when(
-            loading: () => const LoadingOverlay(),
+            loading: () => const SkeletonList(),
             error: (error, _) => ErrorState(
               message: "We couldn't load your notifications.",
               onRetry: () => ref.invalidate(notificationsProvider),

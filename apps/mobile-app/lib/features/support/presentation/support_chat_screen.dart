@@ -126,8 +126,10 @@ class _MessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final align = message.fromSupport ? Alignment.centerLeft : Alignment.centerRight;
-    final color = message.fromSupport ? Colors.white : AppColors.primary;
-    final textColor = message.fromSupport ? AppColors.lightTextPrimary : Colors.white;
+    final color = message.fromSupport ? Theme.of(context).cardColor : AppColors.primary;
+    final textColor = message.fromSupport
+        ? Theme.of(context).textTheme.bodyLarge?.color ?? AppColors.lightTextPrimary
+        : Colors.white;
 
     return Align(
       alignment: align,

@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/components/ui/toast";
 import {
   useApproveMutation,
   useRejectMutation,
@@ -21,21 +22,27 @@ import { ApiError } from "@/lib/api-client";
 
 type ActionKind = "approve" | "reject" | "request-verification" | null;
 
-const COPY: Record<Exclude<ActionKind, null>, { title: string; description: string; confirmLabel: string }> = {
+const COPY: Record<
+  Exclude<ActionKind, null>,
+  { title: string; description: string; confirmLabel: string; successMessage: string }
+> = {
   approve: {
     title: "Approve this request?",
     description: "The customer's daily transfer limit will be updated immediately.",
     confirmLabel: "Approve",
+    successMessage: "Request approved — the customer has been notified.",
   },
   reject: {
     title: "Reject this request?",
     description: "The customer will be notified. Add a short reason if you can.",
     confirmLabel: "Reject",
+    successMessage: "Request rejected — the customer has been notified.",
   },
   "request-verification": {
     title: "Request additional verification?",
     description: "Sends the customer back through OTP verification before we can decide.",
     confirmLabel: "Request verification",
+    successMessage: "Verification requested — the customer has a new code waiting.",
   },
 };
 
@@ -43,6 +50,7 @@ export function ReviewActions({ requestId }: { requestId: string }) {
   const [open, setOpen] = useState<ActionKind>(null);
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const approve = useApproveMutation();
   const reject = useRejectMutation();
@@ -61,6 +69,7 @@ export function ReviewActions({ requestId }: { requestId: string }) {
     setError(null);
     try {
       await mutation.mutateAsync({ requestId, note: note.trim() || undefined });
+      toast(COPY[open].successMessage);
       close();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");

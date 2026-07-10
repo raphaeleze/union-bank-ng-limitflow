@@ -171,7 +171,25 @@ class _IncreaseLimitWizardScreenState extends ConsumerState<IncreaseLimitWizardS
             : Column(
                 children: [
                   if (_step != _WizardStep.success) _StepProgress(index: _stepIndex, total: 5),
-                  Expanded(child: _buildStep(context)),
+                  Expanded(
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 250),
+                      transitionBuilder: (child, animation) => FadeTransition(
+                        opacity: animation,
+                        child: SlideTransition(
+                          position: Tween<Offset>(
+                            begin: const Offset(0.04, 0),
+                            end: Offset.zero,
+                          ).animate(animation),
+                          child: child,
+                        ),
+                      ),
+                      child: KeyedSubtree(
+                        key: ValueKey(_step),
+                        child: _buildStep(context),
+                      ),
+                    ),
+                  ),
                 ],
               ),
       ),
