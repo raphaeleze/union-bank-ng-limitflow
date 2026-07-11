@@ -27,9 +27,10 @@ export function BottomNav() {
             <Link
               key={item.href}
               href={item.href}
+              aria-current={isActive ? "page" : undefined}
               className={cn(
                 "flex flex-1 flex-col items-center gap-1 py-2.5 text-xs font-medium transition-colors",
-                isActive ? "text-blue-700" : "text-slate-400 hover:text-slate-600",
+                isActive ? "text-blue-700" : "text-slate-500 hover:text-slate-700",
               )}
             >
               <Icon className="h-5 w-5" />

@@ -44,7 +44,7 @@ export function NotesPanel({ requestId }: { requestId: string }) {
           {notes.map((note) => (
             <li key={note.id} className="rounded-lg bg-slate-50 p-3">
               <p className="text-sm text-slate-800">{note.note}</p>
-              <p className="mt-1 text-xs text-slate-400">
+              <p className="mt-1 text-xs text-slate-500">
                 {note.authorName} · {formatDistanceToNow(new Date(note.createdAt), { addSuffix: true })}
               </p>
             </li>

@@ -35,7 +35,7 @@ export default function ProfilePage() {
       <Card>
         <CardContent className="divide-y divide-slate-100 p-5">
           <Link href="/support" className="flex items-center gap-3 py-3 first:pt-0">
-            <User className="h-4 w-4 text-slate-400" />
+            <User className="h-4 w-4 text-slate-500" />
             <span className="text-sm font-medium text-slate-900">Contact support</span>
           </Link>
         </CardContent>
