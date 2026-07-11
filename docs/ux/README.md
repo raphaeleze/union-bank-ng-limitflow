@@ -8,24 +8,24 @@ asking for information the bank already had — spread across days. Every flow b
 to answer one question: *what would this look like if it just... didn't require any of
 that?*
 
-## Customer journey (mobile app)
+## Customer journey (customer portal)
 
 ```
-Splash
-  └─► Login (password, or biometric shortcut if already logged in once)
-        └─► Dashboard
-              │  shows: current limit, used today, remaining, active request (if any)
-              └─► "Increase transfer limit"
-                    └─► Step 1: Choose limit      (slider + quick-select chips)
-                    └─► Step 2: Reason            (suggestion chips + free text)
-                    └─► Step 3: Review            (device-trust toggle, submit)
-                    └─► Step 4: OTP               (6-digit code, delivered via
+Login
+  └─► Dashboard
+        │  shows: current limit, used today, remaining, active request (if any)
+        └─► "Increase my limit"
+              └─► Step 1: Choose limit + reason  (amount field, free-text reason,
+                                                    new-device toggle)
+              └─► Step 2: Review                 (confirm and submit)
+              └─► Step 3: OTP                     (6-digit code, delivered via
                                                     the Notifications tab in this demo)
-                    └─► Step 5: Biometric         (mock local_auth prompt)
-                    └─► Result:
-                          ├─► LOW risk    → "Limit increased!" — done, ~instant
-                          └─► MEDIUM/HIGH → "Under review" — timeline screen,
-                                             notified when support/manager decides
+              └─► Step 4: Biometric               (mock confirm — stands in for
+                                                    a real fingerprint/face prompt)
+              └─► Result:
+                    ├─► LOW risk    → "Limit increased!" — done, ~instant
+                    └─► MEDIUM/HIGH → "Under review" — timeline screen,
+                                       notified when support/manager decides
 ```
 
 Every step explains *why* it's happening (the OTP step literally says where to find the

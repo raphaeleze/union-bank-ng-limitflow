@@ -5,7 +5,7 @@ The internal review console for the transfer-limit increase journey described in
 hand-rolled shadcn-style UI primitives.
 
 This portal is **not customer-facing** — it's what support agents and managers use to review
-the requests the [mobile app](../mobile-app)'s risk engine routes to manual review.
+the requests the [customer portal](../customer-portal)'s risk engine routes to manual review.
 
 ## Run
 

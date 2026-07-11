@@ -52,5 +52,16 @@ services:
       backend-api:
         condition: service_healthy
 
+  customer-portal:
+    build:
+      context: ../apps/customer-portal
+      args:
+        NEXT_PUBLIC_API_BASE_URL: http://localhost:8080/api
+    ports:
+      - "3001:3000"
+    depends_on:
+      backend-api:
+        condition: service_healthy
+
 volumes:
   limitflow-postgres-data:

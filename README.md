@@ -139,8 +139,8 @@ In-app transfer limit management, secure biometric approvals, OTP-based verifica
 intelligent risk-based routing, case tracking with real-time status updates, unified
 support, and clear audit trails — built as three working applications, not mockups:
 
-* **[LimitFlow mobile app](apps/mobile-app)** (Flutter) — the primary product. A customer
-  requests a transfer-limit increase through a five-step flow (choose limit → reason →
+* **[LimitFlow customer portal](apps/customer-portal)** (Next.js) — the primary product. A
+  customer requests a transfer-limit increase through a five-step flow (choose limit → reason →
   review → OTP → biometric) and either gets an instant decision or a tracked status while
   it's reviewed.
 * **[LimitFlow backend](apps/backend-api)** (Spring Boot) — Clean Architecture, JWT auth, a
@@ -167,7 +167,7 @@ support, and clear audit trails — built as three working applications, not moc
 
 # Try it
 
-## Everything except the mobile app, via Docker
+## Everything, via Docker
 
 ```bash
 cd docker
@@ -175,6 +175,7 @@ docker compose up --build
 ```
 
 - Backend API: http://localhost:8080 (Swagger UI at `/swagger-ui.html`)
+- Customer portal: http://localhost:3001
 - Employee portal: http://localhost:3000
 
 Demo accounts (password `Password123!` for all three):
@@ -189,19 +190,6 @@ The seeded customer starts at a ₦200,000 daily limit with ₦180,000 used toda
 has a ₦500,000 request sitting in the support queue — log in as the customer to see its
 status, or as support/manager to review it.
 
-## The mobile app
-
-Needs the backend running (via Docker above, or `apps/backend-api` directly) and a local
-Flutter SDK — see [`apps/mobile-app/README.md`](apps/mobile-app/README.md) for the one-time
-platform setup this environment couldn't do without Flutter installed.
-
-```bash
-cd apps/mobile-app
-flutter create --org com.limitflow --project-name limitflow_mobile .
-flutter pub get
-flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8080/api   # Android emulator
-```
-
 ---
 
 # Repository structure
@@ -209,7 +197,7 @@ flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8080/api   # Android emul
 ```
 external-union-bank-ng/
 ├── apps/
-│   ├── mobile-app/          Flutter — the customer-facing app (primary product)
+│   ├── customer-portal/     Next.js — the customer-facing app (primary product)
 │   ├── backend-api/         Spring Boot — REST API, risk engine, audit log
 │   └── employee-portal/     Next.js — support/manager review console
 ├── docs/
@@ -218,7 +206,7 @@ external-union-bank-ng/
 │   ├── api/                 Endpoint reference (mirrors the backend's Swagger UI)
 │   └── ux/                  The customer and staff journeys, mapped step by step
 ├── docker/
-│   └── docker-compose.yml   postgres + backend-api + employee-portal
+│   └── docker-compose.yml   postgres + backend-api + employee-portal + customer-portal
 └── README.md                 you are here
 ```
 

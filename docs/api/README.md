@@ -37,7 +37,7 @@ Role required: `CUSTOMER` on every endpoint in this group.
 | GET | `/limits/{id}` | → `LimitRequestResponse` (must be the caller's own request) |
 
 `LimitRequestResponse` includes a `timeline` array of `{label, status}` steps
-(`COMPLETE`/`CURRENT`/`PENDING`) driving the mobile app's progress screen.
+(`COMPLETE`/`CURRENT`/`PENDING`) driving the customer portal's progress screen.
 
 ## Support review (staff-facing)
 
