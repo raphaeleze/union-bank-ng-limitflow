@@ -49,14 +49,21 @@ class LimitRequestFlowIntegrationTest {
 
     @Test
     void lowRiskRequestWalksThroughOtpAndBiometricToAutomaticApproval() {
+        // The seeded account already has a MEDIUM-risk request UNDER_REVIEW; resolve it
+        // first since a customer can no longer have two active requests at once.
+        resolveSeededRequest();
+
         String token = loginAs("customer@limitflow.demo");
 
         Map<String, Object> account = firstAccount(token);
         String accountId = (String) account.get("id");
 
+        // Resolving the seeded request above raised dailyLimit to 500,000, so this needs
+        // to clear that (and stay under the 1,000,000 high-risk threshold / 2x multiplier)
+        // to genuinely land LOW risk.
         Map<String, Object> submitBody = Map.of(
                 "accountId", accountId,
-                "requestedLimit", 260000,
+                "requestedLimit", 600000,
                 "reason", "Paying a contractor",
                 "knownDevice", true);
         ResponseEntity<Map> submitResponse = restTemplate.exchange("/api/limits/request", HttpMethod.POST,
@@ -81,7 +88,13 @@ class LimitRequestFlowIntegrationTest {
         List<Map<String, Object>> accounts = restTemplate.exchange(
                         "/api/accounts", HttpMethod.GET, authorized(token), List.class)
                 .getBody();
-        assertThat(accounts.get(0).get("dailyLimit")).isEqualTo(260000.0);
+        assertThat(accounts.get(0).get("dailyLimit")).isEqualTo(600000.0);
+    }
+
+    private void resolveSeededRequest() {
+        String supportToken = loginAs("support@limitflow.demo");
+        restTemplate.exchange("/api/support/requests/55555555-5555-5555-5555-555555555555/approve",
+                HttpMethod.POST, new HttpEntity<>(Map.of(), authorizedHeaders(supportToken)), Map.class);
     }
 
     private Map<String, Object> firstAccount(String token) {

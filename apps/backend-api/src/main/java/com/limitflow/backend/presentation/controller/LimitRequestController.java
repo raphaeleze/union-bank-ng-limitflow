@@ -15,7 +15,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 @RestController
@@ -25,10 +24,6 @@ import java.util.UUID;
 @PreAuthorize("hasRole('CUSTOMER')")
 public class LimitRequestController {
 
-    private static final Set<RequestStatus> ACTIVE_STATUSES = Set.of(
-            RequestStatus.PENDING, RequestStatus.OTP_PENDING,
-            RequestStatus.BIOMETRIC_PENDING, RequestStatus.UNDER_REVIEW);
-
     private final LimitRequestService limitRequestService;
     private final CustomerService customerService;
 
@@ -36,7 +31,7 @@ public class LimitRequestController {
     public CurrentLimitResponse current(@AuthenticationPrincipal User user) {
         Account account = customerService.primaryAccount(user);
         LimitRequestResponse activeRequest = limitRequestService.history(user, account.getId()).stream()
-                .filter(r -> ACTIVE_STATUSES.contains(r.getStatus()))
+                .filter(r -> RequestStatus.ACTIVE.contains(r.getStatus()))
                 .findFirst()
                 .map(LimitRequestResponse::from)
                 .orElse(null);

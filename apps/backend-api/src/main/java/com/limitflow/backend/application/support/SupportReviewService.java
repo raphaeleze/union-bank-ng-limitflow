@@ -5,6 +5,7 @@ import com.limitflow.backend.application.notification.NotificationService;
 import com.limitflow.backend.application.otp.OtpService;
 import com.limitflow.backend.domain.account.Account;
 import com.limitflow.backend.domain.account.AccountRepository;
+import com.limitflow.backend.domain.exception.ForbiddenException;
 import com.limitflow.backend.domain.exception.NotFoundException;
 import com.limitflow.backend.domain.exception.ValidationException;
 import com.limitflow.backend.domain.limitrequest.LimitRequest;
@@ -18,6 +19,7 @@ import com.limitflow.backend.domain.user.Role;
 import com.limitflow.backend.domain.user.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -37,8 +39,7 @@ public class SupportReviewService {
 
     /** Support agents see MEDIUM-risk requests; managers see the HIGH-risk escalations. */
     public List<LimitRequest> queueFor(Role role) {
-        RiskLevel scope = role == Role.MANAGER ? RiskLevel.HIGH : RiskLevel.MEDIUM;
-        return limitRequestRepository.findByRiskLevelAndStatusInOrderByCreatedAtAsc(scope, REVIEWABLE);
+        return limitRequestRepository.findByRiskLevelAndStatusInOrderByCreatedAtAsc(scopeFor(role), REVIEWABLE);
     }
 
     /** Unlike {@link #reviewable}, this isn't limited to UNDER_REVIEW — staff can look
@@ -48,8 +49,9 @@ public class SupportReviewService {
                 .orElseThrow(() -> new NotFoundException("Limit request not found"));
     }
 
+    @Transactional
     public LimitRequest approve(User staff, UUID requestId, String note) {
-        LimitRequest limitRequest = reviewable(requestId);
+        LimitRequest limitRequest = reviewable(staff, requestId);
         Account account = limitRequest.getAccount();
         account.applyNewLimit(limitRequest.getRequestedLimit());
         accountRepository.save(account);
@@ -66,7 +68,7 @@ public class SupportReviewService {
     }
 
     public LimitRequest reject(User staff, UUID requestId, String note) {
-        LimitRequest limitRequest = reviewable(requestId);
+        LimitRequest limitRequest = reviewable(staff, requestId);
         limitRequest.setResolvedBy(staff);
         limitRequest.transitionTo(RequestStatus.REJECTED);
         limitRequestRepository.save(limitRequest);
@@ -79,7 +81,7 @@ public class SupportReviewService {
     }
 
     public LimitRequest requestAdditionalVerification(User staff, UUID requestId, String note) {
-        LimitRequest limitRequest = reviewable(requestId);
+        LimitRequest limitRequest = reviewable(staff, requestId);
         limitRequest.transitionTo(RequestStatus.OTP_PENDING);
         limitRequestRepository.save(limitRequest);
 
@@ -93,8 +95,7 @@ public class SupportReviewService {
     }
 
     public SupportNote addStaffNote(User staff, UUID requestId, String note) {
-        LimitRequest limitRequest = limitRequestRepository.findById(requestId)
-                .orElseThrow(() -> new NotFoundException("Limit request not found"));
+        LimitRequest limitRequest = inScope(staff, requestId);
         SupportNote supportNote = recordNote(staff, limitRequest, note);
         if (supportNote == null) {
             throw new ValidationException("Note text is required");
@@ -102,7 +103,8 @@ public class SupportReviewService {
         return supportNote;
     }
 
-    public List<SupportNote> notesFor(UUID requestId) {
+    public List<SupportNote> notesFor(User staff, UUID requestId) {
+        inScope(staff, requestId);
         return supportNoteRepository.findByLimitRequestIdOrderByCreatedAtAsc(requestId);
     }
 
@@ -116,12 +118,26 @@ public class SupportReviewService {
         return supportNote;
     }
 
-    private LimitRequest reviewable(UUID requestId) {
-        LimitRequest limitRequest = limitRequestRepository.findById(requestId)
-                .orElseThrow(() -> new NotFoundException("Limit request not found"));
+    private LimitRequest reviewable(User staff, UUID requestId) {
+        LimitRequest limitRequest = inScope(staff, requestId);
         if (limitRequest.getStatus() != RequestStatus.UNDER_REVIEW) {
             throw new ValidationException("Request is not awaiting review");
         }
         return limitRequest;
+    }
+
+    /** Support agents only act on MEDIUM-risk requests; managers only on HIGH — mirrors {@link #queueFor}. */
+    private LimitRequest inScope(User staff, UUID requestId) {
+        LimitRequest limitRequest = limitRequestRepository.findById(requestId)
+                .orElseThrow(() -> new NotFoundException("Limit request not found"));
+        RiskLevel riskLevel = limitRequest.getRiskLevel();
+        if (riskLevel != null && riskLevel != scopeFor(staff.getRole())) {
+            throw new ForbiddenException("This request is outside your review scope");
+        }
+        return limitRequest;
+    }
+
+    private RiskLevel scopeFor(Role role) {
+        return role == Role.MANAGER ? RiskLevel.HIGH : RiskLevel.MEDIUM;
     }
 }
