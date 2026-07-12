@@ -2,7 +2,7 @@
 
 import { CheckCircle2, Fingerprint, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -38,7 +38,18 @@ export default function IncreaseLimitPage() {
   const otpMutation = useVerifyOtpMutation();
   const biometricMutation = useVerifyBiometricMutation();
 
-  if (isLoading || !current) {
+  // Reachable directly via the bottom nav even with a request already in flight —
+  // redirect to it instead of letting the customer fill out the whole form only to
+  // have the backend reject the submission (an account can only have one active
+  // request at a time).
+  const hasActiveRequest = Boolean(current?.activeRequest) && !request;
+  useEffect(() => {
+    if (hasActiveRequest) {
+      router.replace(`/requests/${current!.activeRequest!.id}`);
+    }
+  }, [hasActiveRequest, current, router]);
+
+  if (isLoading || !current || hasActiveRequest) {
     return <p className="text-sm text-slate-500">Loading…</p>;
   }
 
