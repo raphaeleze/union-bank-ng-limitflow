@@ -37,7 +37,7 @@ export default function SupportPage() {
 
       <Card>
         <CardContent className="flex items-start gap-3 p-5">
-          <MessageCircle className="mt-0.5 h-5 w-5 shrink-0 text-slate-400" />
+          <MessageCircle className="mt-0.5 h-5 w-5 shrink-0 text-slate-500" />
           <p className="text-sm text-slate-500">
             If a request lands in review, our team follows up using the details on your profile —
             no need to call in just to check on it. Track progress any time from the Requests tab.

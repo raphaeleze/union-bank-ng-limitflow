@@ -39,7 +39,7 @@ export default function IncreaseLimitPage() {
   const biometricMutation = useVerifyBiometricMutation();
 
   if (isLoading || !current) {
-    return <p className="text-sm text-slate-400">Loading…</p>;
+    return <p className="text-sm text-slate-500">Loading…</p>;
   }
 
   const amount = Number(requestedLimit);
@@ -122,7 +122,12 @@ export default function IncreaseLimitPage() {
             </div>
 
             <label className="flex items-center gap-2 text-sm text-slate-600">
-              <input type="checkbox" checked={newDevice} onChange={(e) => setNewDevice(e.target.checked)} />
+              <input
+                type="checkbox"
+                checked={newDevice}
+                onChange={(e) => setNewDevice(e.target.checked)}
+                className="h-4 w-4 rounded border-slate-300 accent-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+              />
               I&apos;m on a new or unrecognized device
             </label>
 
@@ -140,6 +145,16 @@ export default function IncreaseLimitPage() {
       {step === "review" && (
         <Card>
           <CardContent className="space-y-4 p-5">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-medium text-slate-900">Review your request</h2>
+              <button
+                type="button"
+                onClick={() => setStep("amount")}
+                className="text-sm font-medium text-blue-600"
+              >
+                Edit
+              </button>
+            </div>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-slate-500">New limit</span>

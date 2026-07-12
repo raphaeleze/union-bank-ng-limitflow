@@ -110,7 +110,7 @@ export function RequestDetailClient({ requestId }: { requestId: string }) {
                         <span className="font-medium text-slate-900">{entry.actorName}</span>{" "}
                         <span className="text-slate-500">{entry.action.replaceAll("_", " ").toLowerCase()}</span>
                       </div>
-                      <span className="text-xs text-slate-400">
+                      <span className="text-xs text-slate-500">
                         {formatDistanceToNow(new Date(entry.createdAt), { addSuffix: true })}
                       </span>
                     </li>

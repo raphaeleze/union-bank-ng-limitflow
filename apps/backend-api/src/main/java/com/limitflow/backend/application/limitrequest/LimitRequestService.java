@@ -15,12 +15,13 @@ import com.limitflow.backend.domain.limitrequest.LimitRequestRepository;
 import com.limitflow.backend.domain.limitrequest.RequestStatus;
 import com.limitflow.backend.domain.limitrequest.RiskLevel;
 import com.limitflow.backend.domain.notification.NotificationType;
-import com.limitflow.backend.domain.user.Role;
 import com.limitflow.backend.domain.user.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -42,6 +43,10 @@ public class LimitRequestService {
 
         if (requestedLimit.compareTo(account.getDailyLimit()) <= 0) {
             throw new ValidationException("Requested limit must be greater than the current limit");
+        }
+
+        if (limitRequestRepository.existsByAccountIdAndStatusIn(account.getId(), RequestStatus.ACTIVE)) {
+            throw new ValidationException("You already have a limit increase request in progress");
         }
 
         LimitRequest limitRequest = new LimitRequest(account, account.getDailyLimit(), requestedLimit, reason, knownDevice);
@@ -68,6 +73,7 @@ public class LimitRequestService {
         return limitRequest;
     }
 
+    @Transactional
     public LimitRequest verifyBiometric(User customer, UUID requestId, boolean success) {
         LimitRequest limitRequest = ownedRequest(customer, requestId);
         requireStatus(limitRequest, RequestStatus.BIOMETRIC_PENDING);
@@ -91,23 +97,23 @@ public class LimitRequestService {
     }
 
     public LimitRequest get(User requester, UUID requestId) {
-        LimitRequest limitRequest = limitRequestRepository.findById(requestId)
-                .orElseThrow(() -> new NotFoundException("Limit request not found"));
-
-        boolean isOwner = limitRequest.getAccount().getUser().getId().equals(requester.getId());
-        boolean isStaff = requester.getRole() != Role.CUSTOMER;
-        if (!isOwner && !isStaff) {
-            throw new ForbiddenException("You cannot view this request");
-        }
-        return limitRequest;
+        // Reached only via GET /api/limits/{id}, which is customer-only (see
+        // LimitRequestController's class-level @PreAuthorize) — staff use the separate
+        // GET /api/support/requests/{id}, which has no ownership check of its own.
+        return ownedRequest(requester, requestId);
     }
 
     private LimitRequest assessRisk(User customer, LimitRequest limitRequest) {
+        Instant since = Instant.now().minus(Duration.ofHours(24));
+        long recentRequests = limitRequestRepository.countByAccountIdAndCreatedAtAfter(
+                limitRequest.getAccount().getId(), since);
+        boolean suspiciousActivity = recentRequests > 2;
+
         RiskContext context = new RiskContext(
                 limitRequest.getCurrentLimit(),
                 limitRequest.getRequestedLimit(),
                 limitRequest.isKnownDevice(),
-                false);
+                suspiciousActivity);
         RiskLevel risk = riskEngine.assess(context);
         limitRequest.setRiskLevel(risk);
         auditService.record(customer, "RISK_ASSESSED", "LimitRequest", limitRequest.getId().toString(), risk.name());

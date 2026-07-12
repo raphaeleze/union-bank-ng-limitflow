@@ -68,8 +68,8 @@ public class SupportController {
     }
 
     @GetMapping("/{id}/notes")
-    public List<SupportNoteResponse> notes(@PathVariable UUID id) {
-        return supportReviewService.notesFor(id).stream()
+    public List<SupportNoteResponse> notes(@AuthenticationPrincipal User user, @PathVariable UUID id) {
+        return supportReviewService.notesFor(user, id).stream()
                 .map(SupportNoteResponse::from)
                 .toList();
     }

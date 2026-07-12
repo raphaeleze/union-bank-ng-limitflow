@@ -72,6 +72,19 @@ class LimitRequestServiceTest {
     }
 
     @Test
+    void submitRequestRejectsWhenAnActiveRequestAlreadyExists() {
+        when(accountRepository.findById(account.getId())).thenReturn(Optional.of(account));
+        when(limitRequestRepository.existsByAccountIdAndStatusIn(eq(account.getId()), eq(RequestStatus.ACTIVE)))
+                .thenReturn(true);
+
+        assertThatThrownBy(() -> service.submitRequest(customer, account.getId(),
+                BigDecimal.valueOf(300_000), "reason", true))
+                .isInstanceOf(ValidationException.class);
+
+        verify(limitRequestRepository, never()).save(any());
+    }
+
+    @Test
     void submitRequestStartsTheOtpStepAndSendsACode() {
         when(accountRepository.findById(account.getId())).thenReturn(Optional.of(account));
         when(otpService.issue(any(LimitRequest.class))).thenReturn("123456");

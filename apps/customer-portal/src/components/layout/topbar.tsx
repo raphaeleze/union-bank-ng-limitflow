@@ -20,7 +20,7 @@ export function Topbar() {
           </p>
         </div>
       </div>
-      <Button variant="ghost" size="sm" onClick={logout}>
+      <Button variant="ghost" size="icon" aria-label="Log out" onClick={logout}>
         <LogOut className="h-4 w-4" />
       </Button>
     </header>

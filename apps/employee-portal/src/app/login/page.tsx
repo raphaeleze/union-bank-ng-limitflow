@@ -79,7 +79,7 @@ export default function LoginPage() {
           </Button>
         </form>
 
-        <p className="mt-6 text-center text-xs text-slate-400">
+        <p className="mt-6 text-center text-xs text-slate-500">
           Demo accounts: support@limitflow.demo / manager@limitflow.demo — password{" "}
           <span className="font-mono">Password123!</span>
         </p>

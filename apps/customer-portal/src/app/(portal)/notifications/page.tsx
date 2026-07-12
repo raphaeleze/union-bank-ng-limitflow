@@ -57,7 +57,7 @@ export default function NotificationsPage() {
                   <div
                     className={cn(
                       "flex h-9 w-9 shrink-0 items-center justify-center rounded-full",
-                      item.read ? "bg-slate-100 text-slate-400" : "bg-blue-100 text-blue-600",
+                      item.read ? "bg-slate-100 text-slate-500" : "bg-blue-100 text-blue-600",
                     )}
                   >
                     <Icon className="h-4 w-4" />
@@ -65,7 +65,7 @@ export default function NotificationsPage() {
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-slate-900">{item.title}</p>
                     <p className="text-sm text-slate-500">{item.message}</p>
-                    <p className="mt-1 text-xs text-slate-400">
+                    <p className="mt-1 text-xs text-slate-500">
                       {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
                     </p>
                   </div>
