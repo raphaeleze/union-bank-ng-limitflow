@@ -19,3 +19,6 @@ apps/customer-portal/out/
 # Env files
 .env
 .env.local
+
+# Git worktrees (used for isolated feature work)
+.worktrees/
