@@ -1,14 +1,15 @@
 package com.limitflow.backend.domain.account;
 
-import java.util.List;
-import java.util.Optional;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
 import java.util.UUID;
 
 public interface AccountRepository {
 
-    Account save(Account account);
+    Mono<Account> save(Account account);
 
-    Optional<Account> findById(UUID id);
+    Mono<Account> findById(UUID id);
 
-    List<Account> findByUserId(UUID userId);
+    Flux<Account> findByUserId(UUID userId);
 }

@@ -1,17 +1,17 @@
 package com.limitflow.backend.domain.audit;
 
-import com.limitflow.backend.domain.user.User;
-import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.Instant;
 import java.util.UUID;
 
-@Entity
-@Table(name = "audit_logs")
+@Table("audit_logs")
 @Getter
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -20,28 +20,24 @@ public class AuditLog {
     @Id
     private UUID id = UUID.randomUUID();
 
-    // Eager: always needed for display DTOs, and open-in-view is disabled.
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "actor_user_id", nullable = false)
-    private User actor;
+    @Column("actor_user_id")
+    private UUID actorUserId;
 
-    @Column(nullable = false)
     private String action;
 
-    @Column(name = "entity_type", nullable = false)
+    @Column("entity_type")
     private String entityType;
 
-    @Column(name = "entity_id")
+    @Column("entity_id")
     private String entityId;
 
-    @Column(columnDefinition = "TEXT")
     private String metadata;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column("created_at")
     private Instant createdAt = Instant.now();
 
-    public AuditLog(User actor, String action, String entityType, String entityId, String metadata) {
-        this.actor = actor;
+    public AuditLog(UUID actorUserId, String action, String entityType, String entityId, String metadata) {
+        this.actorUserId = actorUserId;
         this.action = action;
         this.entityType = entityType;
         this.entityId = entityId;

@@ -1,17 +1,17 @@
 package com.limitflow.backend.domain.notification;
 
-import com.limitflow.backend.domain.user.User;
-import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.Instant;
 import java.util.UUID;
 
-@Entity
-@Table(name = "notifications")
+@Table("notifications")
 @Getter
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -20,28 +20,23 @@ public class Notification {
     @Id
     private UUID id = UUID.randomUUID();
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @Column("user_id")
+    private UUID userId;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
     private NotificationType type;
 
-    @Column(nullable = false)
     private String title;
 
-    @Column(nullable = false)
     private String message;
 
-    @Column(name = "read_at")
+    @Column("read_at")
     private Instant readAt;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column("created_at")
     private Instant createdAt = Instant.now();
 
-    public Notification(User user, NotificationType type, String title, String message) {
-        this.user = user;
+    public Notification(UUID userId, NotificationType type, String title, String message) {
+        this.userId = userId;
         this.type = type;
         this.title = title;
         this.message = message;

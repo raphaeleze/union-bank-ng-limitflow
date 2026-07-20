@@ -1,13 +1,14 @@
 package com.limitflow.backend.domain.user;
 
-import java.util.Optional;
+import reactor.core.publisher.Mono;
+
 import java.util.UUID;
 
 public interface UserRepository {
 
-    User save(User user);
+    Mono<User> save(User user);
 
-    Optional<User> findById(UUID id);
+    Mono<User> findById(UUID id);
 
-    Optional<User> findByEmail(String email);
+    Mono<User> findByEmail(String email);
 }

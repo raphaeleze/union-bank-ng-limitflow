@@ -1,16 +1,17 @@
 package com.limitflow.backend.domain.user;
 
-import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.Instant;
 import java.util.UUID;
 
-@Entity
-@Table(name = "users")
+@Table("users")
 @Getter
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -19,26 +20,22 @@ public class User {
     @Id
     private UUID id = UUID.randomUUID();
 
-    @Column(name = "first_name", nullable = false)
+    @Column("first_name")
     private String firstName;
 
-    @Column(name = "last_name", nullable = false)
+    @Column("last_name")
     private String lastName;
 
-    @Column(nullable = false, unique = true)
     private String email;
 
-    @Column(name = "password_hash", nullable = false)
+    @Column("password_hash")
     private String passwordHash;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
     private Role role;
 
-    @Column(name = "phone")
     private String phone;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column("created_at")
     private Instant createdAt = Instant.now();
 
     public User(String firstName, String lastName, String email, String passwordHash, Role role) {

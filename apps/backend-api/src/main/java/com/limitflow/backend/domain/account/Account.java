@@ -1,18 +1,18 @@
 package com.limitflow.backend.domain.account;
 
-import com.limitflow.backend.domain.user.User;
-import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
-@Entity
-@Table(name = "accounts")
+@Table("accounts")
 @Getter
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -21,30 +21,25 @@ public class Account {
     @Id
     private UUID id = UUID.randomUUID();
 
-    // Eager: the owning user is always needed alongside the account for display, and
-    // open-in-view is disabled, so a lazy proxy here would fail once mapped to a DTO.
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @Column("user_id")
+    private UUID userId;
 
-    @Column(name = "account_number", nullable = false, unique = true)
+    @Column("account_number")
     private String accountNumber;
 
-    @Column(name = "daily_limit", nullable = false, precision = 15, scale = 2)
+    @Column("daily_limit")
     private BigDecimal dailyLimit;
 
-    @Column(name = "used_today", nullable = false, precision = 15, scale = 2)
+    @Column("used_today")
     private BigDecimal usedToday = BigDecimal.ZERO;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
     private AccountStatus status = AccountStatus.ACTIVE;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column("created_at")
     private Instant createdAt = Instant.now();
 
-    public Account(User user, String accountNumber, BigDecimal dailyLimit, BigDecimal usedToday) {
-        this.user = user;
+    public Account(UUID userId, String accountNumber, BigDecimal dailyLimit, BigDecimal usedToday) {
+        this.userId = userId;
         this.accountNumber = accountNumber;
         this.dailyLimit = dailyLimit;
         this.usedToday = usedToday;
