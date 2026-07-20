@@ -73,7 +73,7 @@ Add these in their place (webflux where `starter-web` was, r2dbc where `data-jpa
             <artifactId>spring-boot-starter-data-r2dbc</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.r2dbc</groupId>
+            <groupId>org.postgresql</groupId>
             <artifactId>r2dbc-postgresql</artifactId>
         </dependency>
 ```
