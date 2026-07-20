@@ -4,6 +4,7 @@ import com.limitflow.backend.application.audit.AuditService;
 import com.limitflow.backend.application.limitrequest.risk.RiskContext;
 import com.limitflow.backend.application.limitrequest.risk.RiskEngine;
 import com.limitflow.backend.application.notification.NotificationService;
+import com.limitflow.backend.application.otp.OtpDeliveryService;
 import com.limitflow.backend.application.otp.OtpService;
 import com.limitflow.backend.domain.account.Account;
 import com.limitflow.backend.domain.account.AccountRepository;
@@ -33,6 +34,7 @@ public class LimitRequestService {
     private final LimitRequestRepository limitRequestRepository;
     private final AccountRepository accountRepository;
     private final OtpService otpService;
+    private final OtpDeliveryService otpDeliveryService;
     private final RiskEngine riskEngine;
     private final NotificationService notificationService;
     private final AuditService auditService;
@@ -144,6 +146,7 @@ public class LimitRequestService {
 
     private void sendOtp(User customer, LimitRequest limitRequest) {
         String code = otpService.issue(limitRequest);
+        otpDeliveryService.deliver(customer, code);
         notificationService.send(customer, NotificationType.OTP_SENT, "OTP sent",
                 "Your verification code is " + code + ". It expires in 5 minutes. "
                         + "(Demo mode: shown here instead of SMS.)");

@@ -3,6 +3,7 @@ package com.limitflow.backend.application.limitrequest;
 import com.limitflow.backend.application.audit.AuditService;
 import com.limitflow.backend.application.limitrequest.risk.RiskEngine;
 import com.limitflow.backend.application.notification.NotificationService;
+import com.limitflow.backend.application.otp.OtpDeliveryService;
 import com.limitflow.backend.application.otp.OtpService;
 import com.limitflow.backend.domain.account.Account;
 import com.limitflow.backend.domain.account.AccountRepository;
@@ -39,6 +40,8 @@ class LimitRequestServiceTest {
     @Mock
     private OtpService otpService;
     @Mock
+    private OtpDeliveryService otpDeliveryService;
+    @Mock
     private RiskEngine riskEngine;
     @Mock
     private NotificationService notificationService;
@@ -52,7 +55,7 @@ class LimitRequestServiceTest {
     @BeforeEach
     void setUp() {
         service = new LimitRequestService(limitRequestRepository, accountRepository, otpService,
-                riskEngine, notificationService, auditService);
+                otpDeliveryService, riskEngine, notificationService, auditService);
 
         customer = newUser(UUID.randomUUID(), Role.CUSTOMER);
         account = new Account(customer, "0123456789", BigDecimal.valueOf(200_000), BigDecimal.valueOf(180_000));
@@ -82,6 +85,16 @@ class LimitRequestServiceTest {
                 .isInstanceOf(ValidationException.class);
 
         verify(limitRequestRepository, never()).save(any());
+    }
+
+    @Test
+    void submitRequestDeliversTheOtpThroughOtpDeliveryService() {
+        when(accountRepository.findById(account.getId())).thenReturn(Optional.of(account));
+        when(otpService.issue(any())).thenReturn("654321");
+
+        service.submitRequest(customer, account.getId(), BigDecimal.valueOf(250_000), "reason", true);
+
+        verify(otpDeliveryService).deliver(customer, "654321");
     }
 
     @Test
