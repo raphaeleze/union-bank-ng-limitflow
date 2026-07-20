@@ -17,9 +17,14 @@ import com.limitflow.backend.domain.support.SupportNote;
 import com.limitflow.backend.domain.support.SupportNoteRepository;
 import com.limitflow.backend.domain.user.Role;
 import com.limitflow.backend.domain.user.User;
+import com.limitflow.backend.domain.user.UserRepository;
+import com.limitflow.backend.presentation.dto.support.SupportNoteResponse;
+import com.limitflow.backend.presentation.dto.support.SupportQueueItemResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.UUID;
@@ -33,108 +38,143 @@ public class SupportReviewService {
     private final LimitRequestRepository limitRequestRepository;
     private final AccountRepository accountRepository;
     private final SupportNoteRepository supportNoteRepository;
+    private final UserRepository userRepository;
     private final NotificationService notificationService;
     private final AuditService auditService;
     private final OtpService otpService;
 
     /** Support agents see MEDIUM-risk requests; managers see the HIGH-risk escalations. */
-    public List<LimitRequest> queueFor(Role role) {
-        return limitRequestRepository.findByRiskLevelAndStatusInOrderByCreatedAtAsc(scopeFor(role), REVIEWABLE);
+    public Flux<SupportQueueItemResponse> queueFor(Role role) {
+        return limitRequestRepository.findByRiskLevelAndStatusInOrderByCreatedAtAsc(scopeFor(role), REVIEWABLE)
+                .collectList()
+                .flatMapMany(requests -> accountRepository.findAllById(
+                                requests.stream().map(LimitRequest::getAccountId).distinct().toList())
+                        .collectMap(Account::getId, Account::getUserId)
+                        .flatMapMany(ownerIdByAccountId -> userRepository.findAllById(
+                                        ownerIdByAccountId.values().stream().distinct().toList())
+                                .collectMap(User::getId, User::fullName)
+                                .flatMapMany(nameByUserId -> Flux.fromIterable(requests)
+                                        .map(request -> SupportQueueItemResponse.from(request,
+                                                nameByUserId.get(ownerIdByAccountId.get(request.getAccountId())))))));
     }
 
     /** Unlike {@link #reviewable}, this isn't limited to UNDER_REVIEW — staff can look
      * up a request's detail regardless of whether it's already been decided. */
-    public LimitRequest getForReview(UUID requestId) {
+    public Mono<LimitRequest> getForReview(UUID requestId) {
         return limitRequestRepository.findById(requestId)
-                .orElseThrow(() -> new NotFoundException("Limit request not found"));
+                .switchIfEmpty(Mono.error(new NotFoundException("Limit request not found")));
     }
 
     @Transactional
-    public LimitRequest approve(User staff, UUID requestId, String note) {
-        LimitRequest limitRequest = reviewable(staff, requestId);
-        Account account = limitRequest.getAccount();
-        account.applyNewLimit(limitRequest.getRequestedLimit());
-        accountRepository.save(account);
-
-        limitRequest.setResolvedBy(staff);
-        limitRequest.transitionTo(RequestStatus.APPROVED);
-        limitRequestRepository.save(limitRequest);
-
-        recordNote(staff, limitRequest, note);
-        auditService.record(staff, "MANUAL_APPROVED", "LimitRequest", limitRequest.getId().toString());
-        notificationService.send(account.getUser(), NotificationType.LIMIT_APPROVED, "Limit increased",
-                "Your daily transfer limit is now " + limitRequest.getRequestedLimit());
-        return limitRequest;
+    public Mono<LimitRequest> approve(User staff, UUID requestId, String note) {
+        return reviewable(staff, requestId)
+                .flatMap(limitRequest -> accountRepository.findById(limitRequest.getAccountId())
+                        .flatMap(account -> {
+                            account.applyNewLimit(limitRequest.getRequestedLimit());
+                            return accountRepository.save(account);
+                        })
+                        .flatMap(account -> {
+                            limitRequest.setResolvedByUserId(staff.getId());
+                            limitRequest.transitionTo(RequestStatus.APPROVED);
+                            return limitRequestRepository.save(limitRequest)
+                                    .flatMap(saved -> recordNote(staff, saved, account.getUserId(), note)
+                                            .then(auditService.record(staff, "MANUAL_APPROVED", "LimitRequest",
+                                                    saved.getId().toString()))
+                                            .then(notificationService.send(account.getUserId(),
+                                                    NotificationType.LIMIT_APPROVED, "Limit increased",
+                                                    "Your daily transfer limit is now " + saved.getRequestedLimit()))
+                                            .thenReturn(saved));
+                        }));
     }
 
-    public LimitRequest reject(User staff, UUID requestId, String note) {
-        LimitRequest limitRequest = reviewable(staff, requestId);
-        limitRequest.setResolvedBy(staff);
-        limitRequest.transitionTo(RequestStatus.REJECTED);
-        limitRequestRepository.save(limitRequest);
-
-        recordNote(staff, limitRequest, note);
-        auditService.record(staff, "MANUAL_REJECTED", "LimitRequest", limitRequest.getId().toString());
-        notificationService.send(limitRequest.getAccount().getUser(), NotificationType.LIMIT_REJECTED,
-                "Request declined", note != null && !note.isBlank() ? note : "Your limit increase request was declined.");
-        return limitRequest;
+    public Mono<LimitRequest> reject(User staff, UUID requestId, String note) {
+        return reviewable(staff, requestId)
+                .flatMap(limitRequest -> {
+                    limitRequest.setResolvedByUserId(staff.getId());
+                    limitRequest.transitionTo(RequestStatus.REJECTED);
+                    return limitRequestRepository.save(limitRequest);
+                })
+                .flatMap(saved -> accountOwnerIdOf(saved)
+                        .flatMap(ownerId -> recordNote(staff, saved, ownerId, note)
+                                .then(auditService.record(staff, "MANUAL_REJECTED", "LimitRequest", saved.getId().toString()))
+                                .then(notificationService.send(ownerId, NotificationType.LIMIT_REJECTED, "Request declined",
+                                        note != null && !note.isBlank() ? note : "Your limit increase request was declined."))
+                                .thenReturn(saved)));
     }
 
-    public LimitRequest requestAdditionalVerification(User staff, UUID requestId, String note) {
-        LimitRequest limitRequest = reviewable(staff, requestId);
-        limitRequest.transitionTo(RequestStatus.OTP_PENDING);
-        limitRequestRepository.save(limitRequest);
-
-        recordNote(staff, limitRequest, note);
-        auditService.record(staff, "VERIFICATION_REQUESTED", "LimitRequest", limitRequest.getId().toString());
-
-        String code = otpService.issue(limitRequest);
-        notificationService.send(limitRequest.getAccount().getUser(), NotificationType.VERIFICATION_REQUESTED,
-                "Additional verification needed", "We need to re-verify this request. Your new code is " + code + ".");
-        return limitRequest;
+    public Mono<LimitRequest> requestAdditionalVerification(User staff, UUID requestId, String note) {
+        return reviewable(staff, requestId)
+                .flatMap(limitRequest -> {
+                    limitRequest.transitionTo(RequestStatus.OTP_PENDING);
+                    return limitRequestRepository.save(limitRequest);
+                })
+                .flatMap(saved -> accountOwnerIdOf(saved)
+                        .flatMap(ownerId -> recordNote(staff, saved, ownerId, note)
+                                .then(auditService.record(staff, "VERIFICATION_REQUESTED", "LimitRequest",
+                                        saved.getId().toString()))
+                                .then(otpService.issue(saved))
+                                .flatMap(code -> notificationService.send(ownerId, NotificationType.VERIFICATION_REQUESTED,
+                                        "Additional verification needed",
+                                        "We need to re-verify this request. Your new code is " + code + "."))
+                                .thenReturn(saved)));
     }
 
-    public SupportNote addStaffNote(User staff, UUID requestId, String note) {
-        LimitRequest limitRequest = inScope(staff, requestId);
-        SupportNote supportNote = recordNote(staff, limitRequest, note);
-        if (supportNote == null) {
-            throw new ValidationException("Note text is required");
-        }
-        return supportNote;
+    public Mono<SupportNoteResponse> addStaffNote(User staff, UUID requestId, String note) {
+        return inScope(staff, requestId)
+                .flatMap(limitRequest -> accountOwnerIdOf(limitRequest)
+                        .flatMap(ownerId -> recordNote(staff, limitRequest, ownerId, note)))
+                .switchIfEmpty(Mono.error(new ValidationException("Note text is required")));
     }
 
-    public List<SupportNote> notesFor(User staff, UUID requestId) {
-        inScope(staff, requestId);
-        return supportNoteRepository.findByLimitRequestIdOrderByCreatedAtAsc(requestId);
+    public Flux<SupportNoteResponse> notesFor(User staff, UUID requestId) {
+        return inScope(staff, requestId)
+                .flatMapMany(limitRequest -> supportNoteRepository.findByLimitRequestIdOrderByCreatedAtAsc(requestId)
+                        .collectList()
+                        .flatMapMany(notes -> userRepository.findAllById(
+                                        notes.stream().map(SupportNote::getAuthorUserId).distinct().toList())
+                                .collectMap(User::getId, User::fullName)
+                                .flatMapMany(nameByUserId -> Flux.fromIterable(notes)
+                                        .map(supportNote -> SupportNoteResponse.from(supportNote,
+                                                nameByUserId.get(supportNote.getAuthorUserId()))))));
     }
 
-    private SupportNote recordNote(User staff, LimitRequest limitRequest, String note) {
+    /** Note assembly returns the persisted note as a response DTO — {@code Mono.empty()} when
+     * there's no note text, matching the previous "return null" no-op behavior. */
+    private Mono<SupportNoteResponse> recordNote(User staff, LimitRequest limitRequest, UUID accountOwnerId, String note) {
         if (note == null || note.isBlank()) {
-            return null;
+            return Mono.empty();
         }
-        SupportNote supportNote = supportNoteRepository.save(new SupportNote(limitRequest, staff, note));
-        notificationService.send(limitRequest.getAccount().getUser(), NotificationType.SUPPORT_COMMENT,
-                "New message from support", note);
-        return supportNote;
+        return supportNoteRepository.save(new SupportNote(limitRequest.getId(), staff.getId(), note))
+                .flatMap(supportNote -> notificationService.send(accountOwnerId, NotificationType.SUPPORT_COMMENT,
+                                "New message from support", note)
+                        .thenReturn(SupportNoteResponse.from(supportNote, staff.fullName())));
     }
 
-    private LimitRequest reviewable(User staff, UUID requestId) {
-        LimitRequest limitRequest = inScope(staff, requestId);
-        if (limitRequest.getStatus() != RequestStatus.UNDER_REVIEW) {
-            throw new ValidationException("Request is not awaiting review");
-        }
-        return limitRequest;
+    private Mono<UUID> accountOwnerIdOf(LimitRequest limitRequest) {
+        return accountRepository.findById(limitRequest.getAccountId()).map(Account::getUserId);
+    }
+
+    private Mono<LimitRequest> reviewable(User staff, UUID requestId) {
+        return inScope(staff, requestId)
+                .flatMap(limitRequest -> {
+                    if (limitRequest.getStatus() != RequestStatus.UNDER_REVIEW) {
+                        return Mono.<LimitRequest>error(new ValidationException("Request is not awaiting review"));
+                    }
+                    return Mono.just(limitRequest);
+                });
     }
 
     /** Support agents only act on MEDIUM-risk requests; managers only on HIGH — mirrors {@link #queueFor}. */
-    private LimitRequest inScope(User staff, UUID requestId) {
-        LimitRequest limitRequest = limitRequestRepository.findById(requestId)
-                .orElseThrow(() -> new NotFoundException("Limit request not found"));
-        RiskLevel riskLevel = limitRequest.getRiskLevel();
-        if (riskLevel != null && riskLevel != scopeFor(staff.getRole())) {
-            throw new ForbiddenException("This request is outside your review scope");
-        }
-        return limitRequest;
+    private Mono<LimitRequest> inScope(User staff, UUID requestId) {
+        return limitRequestRepository.findById(requestId)
+                .switchIfEmpty(Mono.error(new NotFoundException("Limit request not found")))
+                .flatMap(limitRequest -> {
+                    RiskLevel riskLevel = limitRequest.getRiskLevel();
+                    if (riskLevel != null && riskLevel != scopeFor(staff.getRole())) {
+                        return Mono.<LimitRequest>error(new ForbiddenException("This request is outside your review scope"));
+                    }
+                    return Mono.just(limitRequest);
+                });
     }
 
     private RiskLevel scopeFor(Role role) {

@@ -3,26 +3,37 @@ package com.limitflow.backend.application.audit;
 import com.limitflow.backend.domain.audit.AuditLog;
 import com.limitflow.backend.domain.audit.AuditLogRepository;
 import com.limitflow.backend.domain.user.User;
+import com.limitflow.backend.domain.user.UserRepository;
+import com.limitflow.backend.presentation.dto.audit.AuditLogResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
 public class AuditService {
 
     private final AuditLogRepository auditLogRepository;
+    private final UserRepository userRepository;
 
-    public void record(User actor, String action, String entityType, String entityId) {
-        record(actor, action, entityType, entityId, null);
+    public Mono<AuditLog> record(User actor, String action, String entityType, String entityId) {
+        return record(actor, action, entityType, entityId, null);
     }
 
-    public void record(User actor, String action, String entityType, String entityId, String metadata) {
-        auditLogRepository.save(new AuditLog(actor, action, entityType, entityId, metadata));
+    public Mono<AuditLog> record(User actor, String action, String entityType, String entityId, String metadata) {
+        return auditLogRepository.save(new AuditLog(actor.getId(), action, entityType, entityId, metadata));
     }
 
-    public List<AuditLog> findAll() {
-        return auditLogRepository.findAllByOrderByCreatedAtDesc();
+    public Flux<AuditLogResponse> findAll() {
+        return auditLogRepository.findAllByOrderByCreatedAtDesc()
+                .collectList()
+                .flatMapMany(logs -> {
+                    var actorIds = logs.stream().map(AuditLog::getActorUserId).distinct().toList();
+                    return userRepository.findAllById(actorIds)
+                            .collectMap(User::getId, User::fullName)
+                            .flatMapMany(namesById -> Flux.fromIterable(logs)
+                                    .map(log -> AuditLogResponse.from(log, namesById.get(log.getActorUserId()))));
+                });
     }
 }

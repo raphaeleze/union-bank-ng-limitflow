@@ -12,4 +12,6 @@ public interface AccountRepository {
     Mono<Account> findById(UUID id);
 
     Flux<Account> findByUserId(UUID userId);
+
+    Flux<Account> findAllById(Iterable<UUID> ids);
 }

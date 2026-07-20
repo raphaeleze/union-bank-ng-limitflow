@@ -24,7 +24,7 @@ public record LimitRequestResponse(
     public static LimitRequestResponse from(LimitRequest request) {
         return new LimitRequestResponse(
                 request.getId(),
-                request.getAccount().getId(),
+                request.getAccountId(),
                 request.getCurrentLimit(),
                 request.getRequestedLimit(),
                 request.getReason(),
