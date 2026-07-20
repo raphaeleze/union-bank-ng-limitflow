@@ -35,6 +35,9 @@ public class User {
     @Column(nullable = false)
     private Role role;
 
+    @Column(name = "phone")
+    private String phone;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
