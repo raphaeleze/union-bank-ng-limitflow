@@ -3,27 +3,18 @@ package com.limitflow.backend.presentation.controller;
 import com.limitflow.backend.application.customer.CustomerService;
 import com.limitflow.backend.domain.user.User;
 import com.limitflow.backend.presentation.dto.account.AccountResponse;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
+import reactor.core.publisher.Flux;
 
 @RestController
-@RequestMapping("/api/accounts")
 @RequiredArgsConstructor
-@Tag(name = "Accounts")
-public class AccountController {
+public class AccountController implements AccountApi {
 
     private final CustomerService customerService;
 
-    @GetMapping
-    public List<AccountResponse> accounts(@AuthenticationPrincipal User user) {
-        return customerService.accountsFor(user).stream()
-                .map(AccountResponse::from)
-                .toList();
+    @Override
+    public Flux<AccountResponse> accounts(User user) {
+        return customerService.accountsFor(user).map(AccountResponse::from);
     }
 }

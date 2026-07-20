@@ -5,7 +5,7 @@ import reactor.core.publisher.Mono;
 
 public interface AuditLogRepository {
 
-    Mono<AuditLog> save(AuditLog auditLog);
+    <S extends AuditLog> Mono<S> save(S auditLog);
 
     Flux<AuditLog> findAllByOrderByCreatedAtDesc();
 }

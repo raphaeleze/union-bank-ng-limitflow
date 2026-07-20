@@ -7,7 +7,7 @@ import java.util.UUID;
 
 public interface SupportNoteRepository {
 
-    Mono<SupportNote> save(SupportNote supportNote);
+    <S extends SupportNote> Mono<S> save(S supportNote);
 
     Flux<SupportNote> findByLimitRequestIdOrderByCreatedAtAsc(UUID limitRequestId);
 }

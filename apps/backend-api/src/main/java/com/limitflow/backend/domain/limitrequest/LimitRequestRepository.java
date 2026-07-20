@@ -10,7 +10,7 @@ import java.util.UUID;
 
 public interface LimitRequestRepository {
 
-    Mono<LimitRequest> save(LimitRequest limitRequest);
+    <S extends LimitRequest> Mono<S> save(S limitRequest);
 
     Mono<LimitRequest> findById(UUID id);
 

@@ -2,71 +2,66 @@ package com.limitflow.backend.presentation.controller;
 
 import com.limitflow.backend.application.customer.CustomerService;
 import com.limitflow.backend.application.limitrequest.LimitRequestService;
-import com.limitflow.backend.domain.account.Account;
-import com.limitflow.backend.domain.limitrequest.LimitRequest;
 import com.limitflow.backend.domain.limitrequest.RequestStatus;
 import com.limitflow.backend.domain.user.User;
-import com.limitflow.backend.presentation.dto.limitrequest.*;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
+import com.limitflow.backend.presentation.dto.limitrequest.BiometricVerifyRequest;
+import com.limitflow.backend.presentation.dto.limitrequest.CurrentLimitResponse;
+import com.limitflow.backend.presentation.dto.limitrequest.LimitRequestResponse;
+import com.limitflow.backend.presentation.dto.limitrequest.LimitRequestSubmitRequest;
+import com.limitflow.backend.presentation.dto.limitrequest.OtpVerifyRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RestController;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/limits")
 @RequiredArgsConstructor
-@Tag(name = "Transfer Limit Requests")
 @PreAuthorize("hasRole('CUSTOMER')")
-public class LimitRequestController {
+public class LimitRequestController implements LimitRequestApi {
 
     private final LimitRequestService limitRequestService;
     private final CustomerService customerService;
 
-    @GetMapping("/current")
-    public CurrentLimitResponse current(@AuthenticationPrincipal User user) {
-        Account account = customerService.primaryAccount(user);
-        LimitRequestResponse activeRequest = limitRequestService.history(user, account.getId()).stream()
-                .filter(r -> RequestStatus.ACTIVE.contains(r.getStatus()))
-                .findFirst()
-                .map(LimitRequestResponse::from)
-                .orElse(null);
-        return CurrentLimitResponse.from(account, activeRequest);
+    @Override
+    public Mono<CurrentLimitResponse> current(User user) {
+        return customerService.primaryAccount(user)
+                .flatMap(account -> limitRequestService.history(user, account.getId())
+                        .filter(r -> RequestStatus.ACTIVE.contains(r.getStatus()))
+                        .next()
+                        .map(LimitRequestResponse::from)
+                        .map(activeRequest -> CurrentLimitResponse.from(account, activeRequest))
+                        .switchIfEmpty(Mono.fromSupplier(() -> CurrentLimitResponse.from(account, null))));
     }
 
-    @PostMapping("/request")
-    public LimitRequestResponse submit(@AuthenticationPrincipal User user, @Valid @RequestBody LimitRequestSubmitRequest request) {
-        LimitRequest limitRequest = limitRequestService.submitRequest(
-                user, request.accountId(), request.requestedLimit(), request.reason(), request.knownDevice());
-        return LimitRequestResponse.from(limitRequest);
+    @Override
+    public Mono<LimitRequestResponse> submit(User user, LimitRequestSubmitRequest request) {
+        return limitRequestService.submitRequest(user, request.accountId(), request.requestedLimit(),
+                        request.reason(), request.knownDevice())
+                .map(LimitRequestResponse::from);
     }
 
-    @PostMapping("/{id}/otp/verify")
-    public LimitRequestResponse verifyOtp(@AuthenticationPrincipal User user, @PathVariable UUID id,
-                                           @Valid @RequestBody OtpVerifyRequest request) {
-        return LimitRequestResponse.from(limitRequestService.verifyOtp(user, id, request.code()));
+    @Override
+    public Mono<LimitRequestResponse> verifyOtp(User user, UUID id, OtpVerifyRequest request) {
+        return limitRequestService.verifyOtp(user, id, request.code()).map(LimitRequestResponse::from);
     }
 
-    @PostMapping("/{id}/biometric/verify")
-    public LimitRequestResponse verifyBiometric(@AuthenticationPrincipal User user, @PathVariable UUID id,
-                                                 @Valid @RequestBody BiometricVerifyRequest request) {
-        return LimitRequestResponse.from(limitRequestService.verifyBiometric(user, id, request.success()));
+    @Override
+    public Mono<LimitRequestResponse> verifyBiometric(User user, UUID id, BiometricVerifyRequest request) {
+        return limitRequestService.verifyBiometric(user, id, request.success()).map(LimitRequestResponse::from);
     }
 
-    @GetMapping("/history")
-    public List<LimitRequestResponse> history(@AuthenticationPrincipal User user) {
-        Account account = customerService.primaryAccount(user);
-        return limitRequestService.history(user, account.getId()).stream()
-                .map(LimitRequestResponse::from)
-                .toList();
+    @Override
+    public Flux<LimitRequestResponse> history(User user) {
+        return customerService.primaryAccount(user)
+                .flatMapMany(account -> limitRequestService.history(user, account.getId()))
+                .map(LimitRequestResponse::from);
     }
 
-    @GetMapping("/{id}")
-    public LimitRequestResponse get(@AuthenticationPrincipal User user, @PathVariable UUID id) {
-        return LimitRequestResponse.from(limitRequestService.get(user, id));
+    @Override
+    public Mono<LimitRequestResponse> get(User user, UUID id) {
+        return limitRequestService.get(user, id).map(LimitRequestResponse::from);
     }
 }

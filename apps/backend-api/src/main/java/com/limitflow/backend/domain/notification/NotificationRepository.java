@@ -7,7 +7,7 @@ import java.util.UUID;
 
 public interface NotificationRepository {
 
-    Mono<Notification> save(Notification notification);
+    <S extends Notification> Mono<S> save(S notification);
 
     Flux<Notification> findByUserIdOrderByCreatedAtDesc(UUID userId);
 }

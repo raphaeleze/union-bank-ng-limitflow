@@ -7,7 +7,7 @@ import java.util.UUID;
 
 public interface UserRepository {
 
-    Mono<User> save(User user);
+    <S extends User> Mono<S> save(S user);
 
     Mono<User> findById(UUID id);
 
