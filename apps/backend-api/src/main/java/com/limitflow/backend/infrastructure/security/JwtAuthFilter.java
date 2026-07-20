@@ -1,51 +1,46 @@
 package com.limitflow.backend.infrastructure.security;
 
 import com.limitflow.backend.application.auth.TokenService;
-import com.limitflow.backend.domain.user.User;
 import com.limitflow.backend.domain.user.UserRepository;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.stereotype.Component;
-import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.server.ServerWebExchange;
+import org.springframework.web.server.WebFilter;
+import org.springframework.web.server.WebFilterChain;
+import reactor.core.publisher.Mono;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
-public class JwtAuthFilter extends OncePerRequestFilter {
+public class JwtAuthFilter implements WebFilter {
 
     private final TokenService tokenService;
     private final UserRepository userRepository;
 
     @Override
-    protected void doFilterInternal(@NonNull HttpServletRequest request,
-                                     @NonNull HttpServletResponse response,
-                                     @NonNull FilterChain filterChain) throws ServletException, IOException {
-        String header = request.getHeader("Authorization");
+    public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
+        String header = exchange.getRequest().getHeaders().getFirst("Authorization");
         if (header != null && header.startsWith("Bearer ")) {
-            String token = header.substring(7);
-            Optional<UUID> userId = tokenService.extractUserId(token);
-            if (userId.isPresent() && SecurityContextHolder.getContext().getAuthentication() == null) {
-                userRepository.findById(userId.get()).ifPresent(this::authenticate);
+            Optional<UUID> userId = tokenService.extractUserId(header.substring(7));
+            if (userId.isPresent()) {
+                return userRepository.findById(userId.get())
+                        .flatMap(user -> {
+                            List<SimpleGrantedAuthority> authorities =
+                                    List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
+                            UsernamePasswordAuthenticationToken authToken =
+                                    new UsernamePasswordAuthenticationToken(user, null, authorities);
+                            return chain.filter(exchange)
+                                    .contextWrite(ReactiveSecurityContextHolder.withAuthentication(authToken));
+                        })
+                        .switchIfEmpty(chain.filter(exchange));
             }
         }
-        filterChain.doFilter(request, response);
-    }
-
-    private void authenticate(User user) {
-        List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
-        UsernamePasswordAuthenticationToken authToken =
-                new UsernamePasswordAuthenticationToken(user, null, authorities);
-        SecurityContextHolder.getContext().setAuthentication(authToken);
+        return chain.filter(exchange);
     }
 }
