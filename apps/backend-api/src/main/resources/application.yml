@@ -24,6 +24,11 @@ limitflow:
     jwt:
       secret: ${JWT_SECRET:this-is-a-demo-secret-key-for-limitflow-do-not-use-in-production}
       expiration-minutes: ${JWT_EXPIRATION_MINUTES:60}
+  twilio:
+    enabled: ${TWILIO_ENABLED:false}
+    account-sid: ${TWILIO_ACCOUNT_SID:}
+    auth-token: ${TWILIO_AUTH_TOKEN:}
+    from-number: ${TWILIO_FROM_NUMBER:}
   risk:
     high-threshold: ${RISK_HIGH_THRESHOLD:1000000}
 

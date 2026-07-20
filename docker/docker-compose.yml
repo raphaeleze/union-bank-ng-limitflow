@@ -23,6 +23,10 @@ services:
       DB_USERNAME: limitflow
       DB_PASSWORD: limitflow
       JWT_SECRET: local-development-secret-change-me-before-any-real-deployment
+      TWILIO_ENABLED: "false"
+      TWILIO_ACCOUNT_SID: ""
+      TWILIO_AUTH_TOKEN: ""
+      TWILIO_FROM_NUMBER: ""
     ports:
       - "8080:8080"
     depends_on:
