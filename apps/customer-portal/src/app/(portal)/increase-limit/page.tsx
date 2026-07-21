@@ -28,6 +28,7 @@ import {
 import { ApiError } from "@/lib/api-client";
 import { formatCurrency } from "@/lib/currency";
 import type { LimitRequest } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 type Step = "amount" | "review" | "otp" | "biometric" | "done";
 
@@ -35,6 +36,29 @@ const RESUMABLE_STEP: Partial<Record<LimitRequest["status"], Step>> = {
   OTP_PENDING: "otp",
   BIOMETRIC_PENDING: "biometric",
 };
+
+const WIZARD_STEPS: Step[] = ["amount", "review", "otp", "biometric"];
+
+function WizardProgress({ step }: { step: Step }) {
+  const currentIndex = WIZARD_STEPS.indexOf(step);
+  if (currentIndex === -1) return null;
+
+  return (
+    <div className="space-y-1.5">
+      <p className="text-xs font-medium text-ink-muted">
+        Step {currentIndex + 1} of {WIZARD_STEPS.length}
+      </p>
+      <div className="flex gap-1.5">
+        {WIZARD_STEPS.map((s, index) => (
+          <div
+            key={s}
+            className={cn("h-1 flex-1 rounded-full", index <= currentIndex ? "bg-accent" : "bg-border")}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function IncreaseLimitPage() {
   const router = useRouter();
@@ -133,6 +157,8 @@ export default function IncreaseLimitPage() {
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-semibold text-ink">Increase your limit</h1>
+
+      <WizardProgress step={effectiveStep} />
 
       {effectiveStep === "amount" && (
         <Card>
