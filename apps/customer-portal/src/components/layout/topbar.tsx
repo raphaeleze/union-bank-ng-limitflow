@@ -9,13 +9,13 @@ export function Topbar() {
   const { user, logout } = useAuth();
 
   return (
-    <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4">
+    <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-border bg-card px-4">
       <div className="flex items-center gap-2">
-        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-600 text-xs font-bold text-white">
+        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-accent text-xs font-bold text-white">
           LF
         </div>
         <div>
-          <p className="text-sm font-medium text-slate-900">
+          <p className="text-sm font-medium text-ink">
             Hi, {user?.firstName}
           </p>
         </div>

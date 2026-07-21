@@ -23,7 +23,7 @@ export default function NotificationsPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold text-slate-900">Notifications</h1>
+      <h1 className="text-xl font-semibold text-ink">Notifications</h1>
 
       {isLoading ? (
         <div className="space-y-3">
@@ -34,22 +34,22 @@ export default function NotificationsPage() {
       ) : isError ? (
         <Card>
           <CardContent className="flex items-center justify-between p-6">
-            <p className="text-sm text-slate-500">We couldn&apos;t load your notifications.</p>
-            <button onClick={() => refetch()} className="text-sm font-medium text-blue-600">
+            <p className="text-sm text-ink-muted">We couldn&apos;t load your notifications.</p>
+            <button onClick={() => refetch()} className="text-sm font-medium text-accent">
               Try again
             </button>
           </CardContent>
         </Card>
       ) : !data || data.length === 0 ? (
         <Card>
-          <CardContent className="p-6 text-center text-sm text-slate-500">
-            <Bell className="mx-auto mb-2 h-8 w-8 text-slate-300" />
+          <CardContent className="p-6 text-center text-sm text-ink-muted">
+            <Bell className="mx-auto mb-2 h-8 w-8 text-border" />
             Nothing here yet.
           </CardContent>
         </Card>
       ) : (
         <Card>
-          <CardContent className="divide-y divide-slate-100 p-5">
+          <CardContent className="divide-y divide-border p-5">
             {data.map((item) => {
               const Icon = ICONS[item.type] ?? Bell;
               return (
@@ -57,15 +57,15 @@ export default function NotificationsPage() {
                   <div
                     className={cn(
                       "flex h-9 w-9 shrink-0 items-center justify-center rounded-full",
-                      item.read ? "bg-slate-100 text-slate-500" : "bg-blue-100 text-blue-600",
+                      item.read ? "bg-border text-ink-muted" : "bg-accent-soft text-accent",
                     )}
                   >
                     <Icon className="h-4 w-4" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-slate-900">{item.title}</p>
-                    <p className="text-sm text-slate-500">{item.message}</p>
-                    <p className="mt-1 text-xs text-slate-500">
+                    <p className="text-sm font-medium text-ink">{item.title}</p>
+                    <p className="text-sm text-ink-muted">{item.message}</p>
+                    <p className="mt-1 text-xs text-ink-muted">
                       {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
                     </p>
                   </div>
