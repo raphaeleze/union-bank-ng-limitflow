@@ -235,9 +235,14 @@ export default function IncreaseLimitPage() {
                 {request.status === "APPROVED" ? "Limit increased" : "Request submitted for review"}
               </p>
               <p className="text-sm text-ink-muted">
-                {request.status === "APPROVED"
-                  ? `Your new daily limit is ${formatCurrency(request.requestedLimit)}.`
-                  : "We'll notify you once a review is complete."}
+                {request.status === "APPROVED" ? (
+                  <>
+                    Your new daily limit is{" "}
+                    <span className="font-tabular">{formatCurrency(request.requestedLimit)}</span>.
+                  </>
+                ) : (
+                  "We'll notify you once a review is complete."
+                )}
               </p>
             </div>
             <Button className="w-full" onClick={() => router.replace(`/requests/${request.id}`)}>

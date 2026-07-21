@@ -10,9 +10,9 @@ const badgeVariants = cva(
       variant: {
         neutral: "bg-border text-ink-muted",
         blue: "bg-accent-soft text-accent",
-        green: "bg-success-soft text-success",
-        orange: "bg-warning-soft text-warning",
-        red: "bg-danger-soft text-danger",
+        green: "bg-success-soft text-success-strong",
+        orange: "bg-warning-soft text-warning-strong",
+        red: "bg-danger-soft text-danger-strong",
       },
     },
     defaultVariants: { variant: "neutral" },
