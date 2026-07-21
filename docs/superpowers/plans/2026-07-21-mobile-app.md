@@ -680,7 +680,7 @@ This is the last backend task. Everything from here on is `apps/mobile`.
 - Create: `apps/mobile/metro.config.js`
 - Modify: `apps/mobile/tsconfig.json`
 - Create: `apps/mobile/app.config.ts`
-- Create: `apps/mobile/app/_layout.tsx` (placeholder root layout — real content in Task 6)
+- Create: `apps/mobile/src/app/_layout.tsx` (placeholder root layout — real content in Task 6)
 - Modify: `docker-compose.yml` is **not** touched — the mobile app doesn't run in Docker
   (see spec: "try it" is Expo Go / a simulator, not `docker compose up`).
 
@@ -839,10 +839,13 @@ Referenced later (Task 5) via `Constants.expoConfig?.extra?.apiBaseUrl`.
 
 - [ ] **Step 7: Write a placeholder root layout so the app boots**
 
-`apps/mobile/app/_layout.tsx` (replaced with real content in Task 6):
+`apps/mobile/src/app/_layout.tsx` (replaced with real content in Task 6). Note the two levels
+up in the CSS import — Expo Router's real root for this SDK is `src/app/`, not `app/`, so a
+file here sits two directories below the mobile package root where `global.css` lives (see
+Task 4's report for the confirmed live behavior this reflects):
 
 ```tsx
-import "../global.css";
+import "../../global.css";
 import { Stack } from "expo-router";
 
 export default function RootLayout() {
@@ -1078,9 +1081,9 @@ git commit -m "Port shared types, currency formatting, and API client to mobile"
 
 **Files:**
 - Create: `apps/mobile/src/lib/auth.tsx`
-- Create: `apps/mobile/app/(auth)/login.tsx`
-- Modify: `apps/mobile/app/_layout.tsx`
-- Create: `apps/mobile/app/(app)/_layout.tsx` (auth+unlock gate; tab bar itself is Task 10)
+- Create: `apps/mobile/src/app/(auth)/login.tsx`
+- Modify: `apps/mobile/src/app/_layout.tsx`
+- Create: `apps/mobile/src/app/(app)/_layout.tsx` (auth+unlock gate; tab bar itself is Task 10)
 
 **Interfaces:**
 - Consumes: `apiClient`, `ApiError`, `LoginResponse`, `UserSummary` (Task 5).
@@ -1189,7 +1192,7 @@ export function useAuth() {
 
 - [ ] **Step 2: Write the login screen**
 
-`apps/mobile/app/(auth)/login.tsx`:
+`apps/mobile/src/app/(auth)/login.tsx`:
 
 ```tsx
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -1306,10 +1309,10 @@ to the end of Task 8, noted there.)
 
 - [ ] **Step 3: Write the root layout (providers) and the authenticated-app gate**
 
-`apps/mobile/app/_layout.tsx`:
+`apps/mobile/src/app/_layout.tsx`:
 
 ```tsx
-import "../global.css";
+import "../../global.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 
@@ -1331,7 +1334,7 @@ export default function RootLayout() {
 }
 ```
 
-`apps/mobile/app/(app)/_layout.tsx` — the login-required + biometric-unlock gate, mirroring
+`apps/mobile/src/app/(app)/_layout.tsx` — the login-required + biometric-unlock gate, mirroring
 `customer-portal/src/app/(portal)/layout.tsx`'s redirect-when-unauthenticated logic, plus the
 mobile-only unlock step:
 
@@ -1383,7 +1386,7 @@ tab navigator rather than replacing this logic.
 
 - [ ] **Step 4: Move the login route**
 
-Confirm `apps/mobile/app/(auth)/login.tsx` exists (Step 2) and there's a route group boundary —
+Confirm `apps/mobile/src/app/(auth)/login.tsx` exists (Step 2) and there's a route group boundary —
 Expo Router treats `(auth)` and `(app)` as parallel unauthenticated/authenticated route groups,
 matching the Next.js `(portal)` route-group convention `customer-portal` already uses for the
 same purpose.
@@ -1398,7 +1401,7 @@ Task 8 lands and confirm this task's files introduce no errors at that point."
 - [ ] **Step 6: Commit**
 
 ```bash
-git add apps/mobile/src/lib/auth.tsx "apps/mobile/app/(auth)" "apps/mobile/app/(app)/_layout.tsx" apps/mobile/app/_layout.tsx
+git add apps/mobile/src/lib/auth.tsx "apps/mobile/src/app/(auth)" "apps/mobile/src/app/(app)/_layout.tsx" apps/mobile/src/app/_layout.tsx
 git commit -m "Add mobile auth: login, secure token storage, biometric app-unlock gate"
 ```
 
@@ -1902,7 +1905,7 @@ git commit -m "Add mobile UI primitives: Dialog, Toast"
 ### Task 10: Tab navigation shell
 
 **Files:**
-- Modify: `apps/mobile/app/(app)/_layout.tsx`
+- Modify: `apps/mobile/src/app/(app)/_layout.tsx`
 - Create: `apps/mobile/src/components/layout/header.tsx`
 
 **Interfaces:**
@@ -1946,7 +1949,7 @@ export function Header() {
 
 - [ ] **Step 2: Rewrite the app-group layout with the real tab bar**
 
-Full new contents of `apps/mobile/app/(app)/_layout.tsx`:
+Full new contents of `apps/mobile/src/app/(app)/_layout.tsx`:
 
 ```tsx
 import { Bell, ClipboardList, LayoutDashboard, ArrowUpCircle, User } from "lucide-react-native";
@@ -2026,7 +2029,7 @@ must show zero errors in isolation. Confirm that specifically.
 - [ ] **Step 4: Commit**
 
 ```bash
-git add "apps/mobile/app/(app)/_layout.tsx" apps/mobile/src/components/layout/header.tsx
+git add "apps/mobile/src/app/(app)/_layout.tsx" apps/mobile/src/components/layout/header.tsx
 git commit -m "Add mobile tab navigation shell"
 ```
 
@@ -2039,7 +2042,7 @@ git commit -m "Add mobile tab navigation shell"
 - Create: `apps/mobile/src/components/dashboard/limit-summary-card.tsx`
 - Create: `apps/mobile/src/components/dashboard/active-request-banner.tsx`
 - Create: `apps/mobile/src/components/requests/status-badge.tsx`
-- Create: `apps/mobile/app/(app)/index.tsx`
+- Create: `apps/mobile/src/app/(app)/index.tsx`
 
 **Interfaces:**
 - Consumes: `apiClient`, `formatCurrency`, `Badge`, `Card`, `CardContent`, `Skeleton`,
@@ -2179,7 +2182,7 @@ export function ActiveRequestBanner({ request }: { request: LimitRequest }) {
 
 - [ ] **Step 5: Dashboard screen**
 
-`apps/mobile/app/(app)/index.tsx`:
+`apps/mobile/src/app/(app)/index.tsx`:
 
 ```tsx
 import { ArrowUpCircle } from "lucide-react-native";
@@ -2258,7 +2261,7 @@ account.
 
 ```bash
 git add apps/mobile/src/hooks/use-dashboard.ts apps/mobile/src/components/dashboard \
-        apps/mobile/src/components/requests/status-badge.tsx "apps/mobile/app/(app)/index.tsx"
+        apps/mobile/src/components/requests/status-badge.tsx "apps/mobile/src/app/(app)/index.tsx"
 git commit -m "Add mobile dashboard screen"
 ```
 
@@ -2268,7 +2271,7 @@ git commit -m "Add mobile dashboard screen"
 
 **Files:**
 - Create: `apps/mobile/src/hooks/use-limit-request.ts`
-- Create: `apps/mobile/app/(app)/increase-limit.tsx`
+- Create: `apps/mobile/src/app/(app)/increase-limit.tsx`
 
 **Interfaces:**
 - Consumes: everything from Tasks 5–11, plus `expo-local-authentication`.
@@ -2345,7 +2348,7 @@ export function useCancelLimitRequestMutation() {
 
 - [ ] **Step 2: Write the wizard screen**
 
-`apps/mobile/app/(app)/increase-limit.tsx` — same state machine as
+`apps/mobile/src/app/(app)/increase-limit.tsx` — same state machine as
 `customer-portal/src/app/(portal)/increase-limit/page.tsx` (step tracking, `effectiveRequest`/
 `effectiveStep` resume logic, cancel confirmation), with the biometric step calling
 `expo-local-authentication` instead of just flipping state, and native components throughout:
@@ -2697,7 +2700,7 @@ biometric step resumes at the correct step (same resume logic as web, already pr
 - [ ] **Step 5: Commit**
 
 ```bash
-git add apps/mobile/src/hooks/use-limit-request.ts "apps/mobile/app/(app)/increase-limit.tsx"
+git add apps/mobile/src/hooks/use-limit-request.ts "apps/mobile/src/app/(app)/increase-limit.tsx"
 git commit -m "Add mobile increase-limit wizard with native biometric verification"
 ```
 
@@ -2710,8 +2713,8 @@ git commit -m "Add mobile increase-limit wizard with native biometric verificati
 - Create: `apps/mobile/src/hooks/use-request-detail.ts`
 - Create: `apps/mobile/src/components/requests/timeline.tsx`
 - Create: `apps/mobile/src/components/requests/request-list-item.tsx`
-- Create: `apps/mobile/app/(app)/requests/index.tsx`
-- Create: `apps/mobile/app/(app)/requests/[id].tsx`
+- Create: `apps/mobile/src/app/(app)/requests/index.tsx`
+- Create: `apps/mobile/src/app/(app)/requests/[id].tsx`
 
 **Interfaces:**
 - Consumes: `Card`, `Skeleton`, `Button`, `Dialog`, `StatusBadge`, `useCancelLimitRequestMutation`
@@ -2849,7 +2852,7 @@ export function RequestListItem({ request }: { request: LimitRequest }) {
 
 - [ ] **Step 4: Requests list screen**
 
-`apps/mobile/app/(app)/requests/index.tsx`:
+`apps/mobile/src/app/(app)/requests/index.tsx`:
 
 ```tsx
 import { Pressable, ScrollView, Text, View } from "react-native";
@@ -2910,7 +2913,7 @@ this visually in Step 6 and adjust if the divider doesn't render.)
 
 - [ ] **Step 5: Request detail screen**
 
-`apps/mobile/app/(app)/requests/[id].tsx` — same resume/cancel affordances as
+`apps/mobile/src/app/(app)/requests/[id].tsx` — same resume/cancel affordances as
 `customer-portal/src/app/(portal)/requests/[id]/request-detail-client.tsx`:
 
 ```tsx
@@ -3054,7 +3057,7 @@ apply the Step 4 fallback.
 
 ```bash
 git add apps/mobile/src/hooks/use-history.ts apps/mobile/src/hooks/use-request-detail.ts \
-        apps/mobile/src/components/requests "apps/mobile/app/(app)/requests"
+        apps/mobile/src/components/requests "apps/mobile/src/app/(app)/requests"
 git commit -m "Add mobile requests list and detail screens"
 ```
 
@@ -3064,7 +3067,7 @@ git commit -m "Add mobile requests list and detail screens"
 
 **Files:**
 - Create: `apps/mobile/src/hooks/use-notifications.ts`
-- Create: `apps/mobile/app/(app)/notifications.tsx`
+- Create: `apps/mobile/src/app/(app)/notifications.tsx`
 
 **Interfaces:**
 - Consumes: `Card`, `Skeleton` (Tasks 7–8).
@@ -3093,7 +3096,7 @@ export function useNotificationsQuery() {
 
 - [ ] **Step 2: Notifications screen**
 
-`apps/mobile/app/(app)/notifications.tsx`:
+`apps/mobile/src/app/(app)/notifications.tsx`:
 
 ```tsx
 import { formatDistanceToNow } from "date-fns";
@@ -3184,7 +3187,7 @@ Expected: no errors.
 - [ ] **Step 4: Commit**
 
 ```bash
-git add apps/mobile/src/hooks/use-notifications.ts "apps/mobile/app/(app)/notifications.tsx"
+git add apps/mobile/src/hooks/use-notifications.ts "apps/mobile/src/app/(app)/notifications.tsx"
 git commit -m "Add mobile notifications screen"
 ```
 
@@ -3193,15 +3196,15 @@ git commit -m "Add mobile notifications screen"
 ### Task 15: Profile + Support screens
 
 **Files:**
-- Create: `apps/mobile/app/(app)/profile.tsx`
-- Create: `apps/mobile/app/(app)/support.tsx`
+- Create: `apps/mobile/src/app/(app)/profile.tsx`
+- Create: `apps/mobile/src/app/(app)/support.tsx`
 
 **Interfaces:**
 - Consumes: `useAuth`, `Card`, `Button` (Tasks 6–7).
 
 - [ ] **Step 1: Profile screen**
 
-`apps/mobile/app/(app)/profile.tsx`:
+`apps/mobile/src/app/(app)/profile.tsx`:
 
 ```tsx
 import { Link } from "expo-router";
@@ -3263,7 +3266,7 @@ export default function ProfileScreen() {
 
 - [ ] **Step 2: Support screen**
 
-`apps/mobile/app/(app)/support.tsx`:
+`apps/mobile/src/app/(app)/support.tsx`:
 
 ```tsx
 import * as Linking from "expo-linking";
@@ -3323,7 +3326,7 @@ Expected: no errors.
 - [ ] **Step 4: Commit**
 
 ```bash
-git add "apps/mobile/app/(app)/profile.tsx" "apps/mobile/app/(app)/support.tsx"
+git add "apps/mobile/src/app/(app)/profile.tsx" "apps/mobile/src/app/(app)/support.tsx"
 git commit -m "Add mobile profile and support screens"
 ```
 
