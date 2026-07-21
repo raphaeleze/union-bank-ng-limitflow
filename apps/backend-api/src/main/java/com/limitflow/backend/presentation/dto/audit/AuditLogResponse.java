@@ -15,10 +15,10 @@ public record AuditLogResponse(
         Instant createdAt
 ) {
 
-    public static AuditLogResponse from(AuditLog auditLog) {
+    public static AuditLogResponse from(AuditLog auditLog, String actorName) {
         return new AuditLogResponse(
                 auditLog.getId(),
-                auditLog.getActor().fullName(),
+                actorName,
                 auditLog.getAction(),
                 auditLog.getEntityType(),
                 auditLog.getEntityId(),

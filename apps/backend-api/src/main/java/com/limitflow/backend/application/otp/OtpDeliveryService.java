@@ -7,6 +7,8 @@ import com.twilio.type.PhoneNumber;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 /**
  * Sends the OTP via Twilio SMS when {@code limitflow.twilio.enabled=true} and the customer has
@@ -34,7 +36,13 @@ public class OtpDeliveryService {
         }
     }
 
-    public void deliver(User customer, String code) {
+    public Mono<Void> deliver(User customer, String code) {
+        return Mono.fromRunnable(() -> deliverBlocking(customer, code))
+                .subscribeOn(Schedulers.boundedElastic())
+                .then();
+    }
+
+    private void deliverBlocking(User customer, String code) {
         if (shouldSendViaTwilio(customer)) {
             try {
                 Message.creator(new PhoneNumber(customer.getPhone()), new PhoneNumber(fromNumber),

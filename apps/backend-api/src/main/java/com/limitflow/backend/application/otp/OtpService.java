@@ -6,6 +6,7 @@ import com.limitflow.backend.domain.otp.OtpCodeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
 
 import java.security.SecureRandom;
 import java.time.Duration;
@@ -25,22 +26,22 @@ public class OtpService {
     private final PasswordEncoder passwordEncoder;
     private final SecureRandom random = new SecureRandom();
 
-    public String issue(LimitRequest limitRequest) {
+    public Mono<String> issue(LimitRequest limitRequest) {
         String code = String.format("%06d", random.nextInt(1_000_000));
-        OtpCode otpCode = new OtpCode(limitRequest, passwordEncoder.encode(code), Instant.now().plus(TTL));
-        otpCodeRepository.save(otpCode);
-        return code;
+        OtpCode otpCode = new OtpCode(limitRequest.getId(), passwordEncoder.encode(code), Instant.now().plus(TTL));
+        return otpCodeRepository.save(otpCode).thenReturn(code);
     }
 
-    public boolean verify(LimitRequest limitRequest, String code) {
+    public Mono<Boolean> verify(LimitRequest limitRequest, String code) {
         return otpCodeRepository.findTopByLimitRequestIdOrderByCreatedAtDesc(limitRequest.getId())
                 .filter(otp -> !otp.isExpired())
                 .filter(otp -> passwordEncoder.matches(code, otp.getCodeHash()))
-                .map(this::markVerified)
-                .isPresent();
+                .flatMap(this::markVerified)
+                .map(otp -> true)
+                .defaultIfEmpty(false);
     }
 
-    private OtpCode markVerified(OtpCode otpCode) {
+    private Mono<OtpCode> markVerified(OtpCode otpCode) {
         otpCode.setVerifiedAt(Instant.now());
         return otpCodeRepository.save(otpCode);
     }

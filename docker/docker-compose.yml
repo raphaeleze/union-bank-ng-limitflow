@@ -20,6 +20,7 @@ services:
       context: ../apps/backend-api
     environment:
       DB_URL: jdbc:postgresql://postgres:5432/limitflow
+      R2DBC_URL: r2dbc:postgresql://postgres:5432/limitflow
       DB_USERNAME: limitflow
       DB_PASSWORD: limitflow
       JWT_SECRET: local-development-secret-change-me-before-any-real-deployment

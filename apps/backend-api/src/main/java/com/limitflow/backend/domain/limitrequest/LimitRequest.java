@@ -1,76 +1,101 @@
 package com.limitflow.backend.domain.limitrequest;
 
-import com.limitflow.backend.domain.account.Account;
-import com.limitflow.backend.domain.user.User;
-import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.PersistenceCreator;
+import org.springframework.data.annotation.Transient;
+import org.springframework.data.domain.Persistable;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
-@Entity
-@Table(name = "limit_requests")
+/**
+ * The {@code id} is client-assigned (not DB-generated), so Spring Data R2DBC can't tell new
+ * from existing rows just by checking for a null id — it would otherwise emit an UPDATE for a
+ * brand-new, never-persisted entity, silently affecting zero rows instead of inserting.
+ * Implementing {@link Persistable} with an explicit {@code isNew} flag fixes that: the business
+ * constructor leaves it {@code true}, while the {@link PersistenceCreator} constructor Spring
+ * Data uses to rehydrate rows read back from the database sets it {@code false}.
+ */
+@Table("limit_requests")
 @Getter
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class LimitRequest {
+public class LimitRequest implements Persistable<UUID> {
 
     @Id
     private UUID id = UUID.randomUUID();
 
-    // Eager for the same reason as Account.user: always needed for display DTOs, and
-    // open-in-view is disabled so lazy loading would fail outside the service call.
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "account_id", nullable = false)
-    private Account account;
+    @Column("account_id")
+    private UUID accountId;
 
-    @Column(name = "current_limit", nullable = false, precision = 15, scale = 2)
+    @Column("current_limit")
     private BigDecimal currentLimit;
 
-    @Column(name = "requested_limit", nullable = false, precision = 15, scale = 2)
+    @Column("requested_limit")
     private BigDecimal requestedLimit;
 
-    @Column(nullable = false)
     private String reason;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
     private RequestStatus status = RequestStatus.PENDING;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "risk_level")
+    @Column("risk_level")
     private RiskLevel riskLevel;
 
-    @Column(name = "known_device", nullable = false)
+    @Column("known_device")
     private boolean knownDevice = true;
 
-    @Column(name = "otp_verified_at")
+    @Column("otp_verified_at")
     private Instant otpVerifiedAt;
 
-    @Column(name = "biometric_verified_at")
+    @Column("biometric_verified_at")
     private Instant biometricVerifiedAt;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "resolved_by")
-    private User resolvedBy;
+    @Column("resolved_by")
+    private UUID resolvedByUserId;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column("created_at")
     private Instant createdAt = Instant.now();
 
-    @Column(name = "updated_at", nullable = false)
+    @Column("updated_at")
     private Instant updatedAt = Instant.now();
 
-    public LimitRequest(Account account, BigDecimal currentLimit, BigDecimal requestedLimit,
+    @Transient
+    private boolean isNew = true;
+
+    public LimitRequest(UUID accountId, BigDecimal currentLimit, BigDecimal requestedLimit,
                          String reason, boolean knownDevice) {
-        this.account = account;
+        this.accountId = accountId;
         this.currentLimit = currentLimit;
         this.requestedLimit = requestedLimit;
         this.reason = reason;
         this.knownDevice = knownDevice;
+    }
+
+    @PersistenceCreator
+    LimitRequest(UUID id, UUID accountId, BigDecimal currentLimit, BigDecimal requestedLimit, String reason,
+            RequestStatus status, RiskLevel riskLevel, boolean knownDevice, Instant otpVerifiedAt,
+            Instant biometricVerifiedAt, UUID resolvedByUserId, Instant createdAt, Instant updatedAt) {
+        this.id = id;
+        this.accountId = accountId;
+        this.currentLimit = currentLimit;
+        this.requestedLimit = requestedLimit;
+        this.reason = reason;
+        this.status = status;
+        this.riskLevel = riskLevel;
+        this.knownDevice = knownDevice;
+        this.otpVerifiedAt = otpVerifiedAt;
+        this.biometricVerifiedAt = biometricVerifiedAt;
+        this.resolvedByUserId = resolvedByUserId;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+        this.isNew = false;
     }
 
     public void touch() {

@@ -1,76 +1,62 @@
 package com.limitflow.backend.presentation.controller;
 
 import com.limitflow.backend.application.support.SupportReviewService;
-import com.limitflow.backend.domain.support.SupportNote;
 import com.limitflow.backend.domain.user.User;
 import com.limitflow.backend.presentation.dto.limitrequest.LimitRequestResponse;
 import com.limitflow.backend.presentation.dto.support.AddNoteRequest;
 import com.limitflow.backend.presentation.dto.support.ReviewActionRequest;
 import com.limitflow.backend.presentation.dto.support.SupportNoteResponse;
 import com.limitflow.backend.presentation.dto.support.SupportQueueItemResponse;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RestController;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/support/requests")
 @RequiredArgsConstructor
-@Tag(name = "Support Review")
 @PreAuthorize("hasAnyRole('SUPPORT_AGENT', 'MANAGER')")
-public class SupportController {
+public class SupportController implements SupportApi {
 
     private final SupportReviewService supportReviewService;
 
-    @GetMapping
-    public List<SupportQueueItemResponse> queue(@AuthenticationPrincipal User user) {
-        return supportReviewService.queueFor(user.getRole()).stream()
-                .map(SupportQueueItemResponse::from)
-                .toList();
+    @Override
+    public Flux<SupportQueueItemResponse> queue(User user) {
+        return supportReviewService.queueFor(user.getRole());
     }
 
-    @GetMapping("/{id}")
-    public LimitRequestResponse get(@PathVariable UUID id) {
-        return LimitRequestResponse.from(supportReviewService.getForReview(id));
+    @Override
+    public Mono<LimitRequestResponse> get(UUID id) {
+        return supportReviewService.getForReview(id).map(LimitRequestResponse::from);
     }
 
-    @PostMapping("/{id}/approve")
-    public LimitRequestResponse approve(@AuthenticationPrincipal User user, @PathVariable UUID id,
-                                         @RequestBody(required = false) ReviewActionRequest request) {
+    @Override
+    public Mono<LimitRequestResponse> approve(User user, UUID id, ReviewActionRequest request) {
         String note = request != null ? request.note() : null;
-        return LimitRequestResponse.from(supportReviewService.approve(user, id, note));
+        return supportReviewService.approve(user, id, note).map(LimitRequestResponse::from);
     }
 
-    @PostMapping("/{id}/reject")
-    public LimitRequestResponse reject(@AuthenticationPrincipal User user, @PathVariable UUID id,
-                                        @RequestBody(required = false) ReviewActionRequest request) {
+    @Override
+    public Mono<LimitRequestResponse> reject(User user, UUID id, ReviewActionRequest request) {
         String note = request != null ? request.note() : null;
-        return LimitRequestResponse.from(supportReviewService.reject(user, id, note));
+        return supportReviewService.reject(user, id, note).map(LimitRequestResponse::from);
     }
 
-    @PostMapping("/{id}/request-verification")
-    public LimitRequestResponse requestVerification(@AuthenticationPrincipal User user, @PathVariable UUID id,
-                                                      @RequestBody(required = false) ReviewActionRequest request) {
+    @Override
+    public Mono<LimitRequestResponse> requestVerification(User user, UUID id, ReviewActionRequest request) {
         String note = request != null ? request.note() : null;
-        return LimitRequestResponse.from(supportReviewService.requestAdditionalVerification(user, id, note));
+        return supportReviewService.requestAdditionalVerification(user, id, note).map(LimitRequestResponse::from);
     }
 
-    @PostMapping("/{id}/notes")
-    public SupportNoteResponse addNote(@AuthenticationPrincipal User user, @PathVariable UUID id,
-                                        @Valid @RequestBody AddNoteRequest request) {
-        SupportNote note = supportReviewService.addStaffNote(user, id, request.note());
-        return SupportNoteResponse.from(note);
+    @Override
+    public Mono<SupportNoteResponse> addNote(User user, UUID id, AddNoteRequest request) {
+        return supportReviewService.addStaffNote(user, id, request.note());
     }
 
-    @GetMapping("/{id}/notes")
-    public List<SupportNoteResponse> notes(@AuthenticationPrincipal User user, @PathVariable UUID id) {
-        return supportReviewService.notesFor(user, id).stream()
-                .map(SupportNoteResponse::from)
-                .toList();
+    @Override
+    public Flux<SupportNoteResponse> notes(User user, UUID id) {
+        return supportReviewService.notesFor(user, id);
     }
 }
