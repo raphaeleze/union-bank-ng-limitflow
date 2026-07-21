@@ -2,9 +2,9 @@ package com.limitflow.backend.application.otp;
 
 import com.limitflow.backend.domain.user.User;
 import org.junit.jupiter.api.Test;
+import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -48,7 +48,7 @@ class OtpDeliveryServiceTest {
         OtpDeliveryService service = new OtpDeliveryService(false, "", "", "");
         User customer = newCustomer(null);
 
-        assertThatCode(() -> service.deliver(customer, "123456")).doesNotThrowAnyException();
+        StepVerifier.create(service.deliver(customer, "123456")).verifyComplete();
     }
 
     private User newCustomer(String phone) {

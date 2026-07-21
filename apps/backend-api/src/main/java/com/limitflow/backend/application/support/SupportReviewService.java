@@ -65,7 +65,11 @@ public class SupportReviewService {
                 .switchIfEmpty(Mono.error(new NotFoundException("Limit request not found")));
     }
 
-    @Transactional
+    /** Names the R2DBC manager explicitly: spring-boot-starter-jdbc (present for Flyway) and
+     * spring-boot-starter-data-r2dbc both auto-configure a TransactionManager bean, so an
+     * unqualified {@code @Transactional} fails to start up with "expected single matching bean
+     * but found 2". */
+    @Transactional("connectionFactoryTransactionManager")
     public Mono<LimitRequest> approve(User staff, UUID requestId, String note) {
         return reviewable(staff, requestId)
                 .flatMap(limitRequest -> accountRepository.findById(limitRequest.getAccountId())

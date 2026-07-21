@@ -1,15 +1,13 @@
 package com.limitflow.backend.integration;
 
+import com.limitflow.backend.EmbeddedR2dbcConfig;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
+import org.springframework.context.annotation.Import;
+import org.springframework.test.web.reactive.server.WebTestClient;
 
 import java.util.List;
 import java.util.Map;
@@ -21,25 +19,30 @@ import static io.zonky.test.db.AutoConfigureEmbeddedDatabase.DatabaseType.POSTGR
 import static io.zonky.test.db.AutoConfigureEmbeddedDatabase.RefreshMode.BEFORE_EACH_TEST_METHOD;
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SuppressWarnings({"unchecked", "rawtypes"})
+@SuppressWarnings("unchecked")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@AutoConfigureWebTestClient
 @AutoConfigureEmbeddedDatabase(type = POSTGRES, provider = ZONKY, refresh = BEFORE_EACH_TEST_METHOD)
+@Import(EmbeddedR2dbcConfig.class)
 class LimitRequestFlowIntegrationTest {
 
     private static final Pattern CODE_PATTERN = Pattern.compile("code is (\\d{6})");
 
     @Autowired
-    private TestRestTemplate restTemplate;
+    private WebTestClient webTestClient;
 
     @Test
     void seededDashboardShowsTheActiveMediumRiskRequest() {
         String token = loginAs("customer@limitflow.demo");
 
-        ResponseEntity<Map> response = restTemplate.exchange("/api/limits/current", HttpMethod.GET,
-                authorized(token), Map.class);
+        Map<String, Object> body = webTestClient.get().uri("/api/limits/current")
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(Map.class)
+                .returnResult()
+                .getResponseBody();
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        Map<String, Object> body = response.getBody();
         assertThat(body.get("dailyLimit")).isEqualTo(200000.0);
         assertThat(body.get("usedToday")).isEqualTo(180000.0);
         Map<String, Object> activeRequest = (Map<String, Object>) body.get("activeRequest");
@@ -49,8 +52,6 @@ class LimitRequestFlowIntegrationTest {
 
     @Test
     void lowRiskRequestWalksThroughOtpAndBiometricToAutomaticApproval() {
-        // The seeded account already has a MEDIUM-risk request UNDER_REVIEW; resolve it
-        // first since a customer can no longer have two active requests at once.
         resolveSeededRequest();
 
         String token = loginAs("customer@limitflow.demo");
@@ -58,56 +59,80 @@ class LimitRequestFlowIntegrationTest {
         Map<String, Object> account = firstAccount(token);
         String accountId = (String) account.get("id");
 
-        // Resolving the seeded request above raised dailyLimit to 500,000, so this needs
-        // to clear that (and stay under the 1,000,000 high-risk threshold / 2x multiplier)
-        // to genuinely land LOW risk.
         Map<String, Object> submitBody = Map.of(
                 "accountId", accountId,
                 "requestedLimit", 600000,
                 "reason", "Paying a contractor",
                 "knownDevice", true);
-        ResponseEntity<Map> submitResponse = restTemplate.exchange("/api/limits/request", HttpMethod.POST,
-                new HttpEntity<>(submitBody, authorizedHeaders(token)), Map.class);
-        assertThat(submitResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
-        String requestId = (String) submitResponse.getBody().get("id");
-        assertThat(submitResponse.getBody().get("status")).isEqualTo("OTP_PENDING");
+        Map<String, Object> submitResponse = webTestClient.post().uri("/api/limits/request")
+                .header("Authorization", "Bearer " + token)
+                .bodyValue(submitBody)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(Map.class)
+                .returnResult()
+                .getResponseBody();
+        String requestId = (String) submitResponse.get("id");
+        assertThat(submitResponse.get("status")).isEqualTo("OTP_PENDING");
 
         String otpCode = latestOtpCode(token);
 
-        ResponseEntity<Map> otpResponse = restTemplate.exchange("/api/limits/" + requestId + "/otp/verify",
-                HttpMethod.POST, new HttpEntity<>(Map.of("code", otpCode), authorizedHeaders(token)), Map.class);
-        assertThat(otpResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(otpResponse.getBody().get("status")).isEqualTo("BIOMETRIC_PENDING");
+        Map<String, Object> otpResponse = webTestClient.post().uri("/api/limits/" + requestId + "/otp/verify")
+                .header("Authorization", "Bearer " + token)
+                .bodyValue(Map.of("code", otpCode))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(Map.class)
+                .returnResult()
+                .getResponseBody();
+        assertThat(otpResponse.get("status")).isEqualTo("BIOMETRIC_PENDING");
 
-        ResponseEntity<Map> biometricResponse = restTemplate.exchange("/api/limits/" + requestId + "/biometric/verify",
-                HttpMethod.POST, new HttpEntity<>(Map.of("success", true), authorizedHeaders(token)), Map.class);
-        assertThat(biometricResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(biometricResponse.getBody().get("status")).isEqualTo("APPROVED");
-        assertThat(biometricResponse.getBody().get("riskLevel")).isEqualTo("LOW");
+        Map<String, Object> biometricResponse = webTestClient.post().uri("/api/limits/" + requestId + "/biometric/verify")
+                .header("Authorization", "Bearer " + token)
+                .bodyValue(Map.of("success", true))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(Map.class)
+                .returnResult()
+                .getResponseBody();
+        assertThat(biometricResponse.get("status")).isEqualTo("APPROVED");
+        assertThat(biometricResponse.get("riskLevel")).isEqualTo("LOW");
 
-        List<Map<String, Object>> accounts = restTemplate.exchange(
-                        "/api/accounts", HttpMethod.GET, authorized(token), List.class)
-                .getBody();
+        List<Map<String, Object>> accounts = (List<Map<String, Object>>) (List<?>) webTestClient.get().uri("/api/accounts")
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBodyList(Map.class)
+                .returnResult()
+                .getResponseBody();
         assertThat(accounts.get(0).get("dailyLimit")).isEqualTo(600000.0);
     }
 
     private void resolveSeededRequest() {
         String supportToken = loginAs("support@limitflow.demo");
-        restTemplate.exchange("/api/support/requests/55555555-5555-5555-5555-555555555555/approve",
-                HttpMethod.POST, new HttpEntity<>(Map.of(), authorizedHeaders(supportToken)), Map.class);
+        webTestClient.post().uri("/api/support/requests/55555555-5555-5555-5555-555555555555/approve")
+                .header("Authorization", "Bearer " + supportToken)
+                .bodyValue(Map.of())
+                .exchange();
     }
 
     private Map<String, Object> firstAccount(String token) {
-        ResponseEntity<List> response = restTemplate.exchange("/api/accounts", HttpMethod.GET,
-                authorized(token), List.class);
-        List<Map<String, Object>> accounts = response.getBody();
+        List<Map<String, Object>> accounts = (List<Map<String, Object>>) (List<?>) webTestClient.get().uri("/api/accounts")
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectBodyList(Map.class)
+                .returnResult()
+                .getResponseBody();
         return accounts.get(0);
     }
 
     private String latestOtpCode(String token) {
-        ResponseEntity<List> response = restTemplate.exchange("/api/notifications", HttpMethod.GET,
-                authorized(token), List.class);
-        List<Map<String, Object>> notifications = response.getBody();
+        List<Map<String, Object>> notifications = (List<Map<String, Object>>) (List<?>) webTestClient.get().uri("/api/notifications")
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectBodyList(Map.class)
+                .returnResult()
+                .getResponseBody();
         String message = notifications.stream()
                 .filter(n -> "OTP_SENT".equals(n.get("type")))
                 .findFirst()
@@ -119,18 +144,12 @@ class LimitRequestFlowIntegrationTest {
     }
 
     private String loginAs(String email) {
-        ResponseEntity<Map> response = restTemplate.postForEntity("/api/auth/login",
-                Map.of("email", email, "password", "Password123!"), Map.class);
-        return (String) response.getBody().get("token");
-    }
-
-    private HttpEntity<Void> authorized(String token) {
-        return new HttpEntity<>(authorizedHeaders(token));
-    }
-
-    private HttpHeaders authorizedHeaders(String token) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(token);
-        return headers;
+        Map<String, Object> body = webTestClient.post().uri("/api/auth/login")
+                .bodyValue(Map.of("email", email, "password", "Password123!"))
+                .exchange()
+                .expectBody(Map.class)
+                .returnResult()
+                .getResponseBody();
+        return (String) body.get("token");
     }
 }

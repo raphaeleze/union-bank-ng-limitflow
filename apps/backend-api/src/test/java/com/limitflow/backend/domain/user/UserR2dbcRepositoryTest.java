@@ -1,7 +1,6 @@
 package com.limitflow.backend.domain.user;
 
 import com.limitflow.backend.EmbeddedR2dbcConfig;
-import com.limitflow.backend.infrastructure.persistence.UserR2dbcRepository;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +18,7 @@ import static io.zonky.test.db.AutoConfigureEmbeddedDatabase.RefreshMode.BEFORE_
 class UserR2dbcRepositoryTest {
 
     @Autowired
-    private UserR2dbcRepository userR2dbcRepository;
+    private UserRepository userR2dbcRepository;
 
     @Test
     void roleEnumRoundTripsAsItsNameString() {

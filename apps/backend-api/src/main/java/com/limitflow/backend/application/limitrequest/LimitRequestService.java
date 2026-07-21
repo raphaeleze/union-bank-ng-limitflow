@@ -86,7 +86,11 @@ public class LimitRequestService {
                         .thenReturn(limitRequest));
     }
 
-    @Transactional
+    /** Names the R2DBC manager explicitly: spring-boot-starter-jdbc (present for Flyway) and
+     * spring-boot-starter-data-r2dbc both auto-configure a TransactionManager bean, so an
+     * unqualified {@code @Transactional} fails to start up with "expected single matching bean
+     * but found 2". */
+    @Transactional("connectionFactoryTransactionManager")
     public Mono<LimitRequest> verifyBiometric(User customer, UUID requestId, boolean success) {
         return ownedRequest(customer, requestId)
                 .flatMap(limitRequest -> {
