@@ -50,7 +50,7 @@ export default function IncreaseLimitPage() {
   }, [hasActiveRequest, current, router]);
 
   if (isLoading || !current || hasActiveRequest) {
-    return <p className="text-sm text-slate-500">Loading…</p>;
+    return <p className="text-sm text-ink-muted">Loading…</p>;
   }
 
   const amount = Number(requestedLimit);
@@ -96,13 +96,14 @@ export default function IncreaseLimitPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold text-slate-900">Increase your limit</h1>
+      <h1 className="text-xl font-semibold text-ink">Increase your limit</h1>
 
       {step === "amount" && (
         <Card>
           <CardContent className="space-y-4 p-5">
-            <p className="text-sm text-slate-500">
-              Current daily limit: <span className="font-medium text-slate-900">{formatCurrency(current.dailyLimit)}</span>
+            <p className="text-sm text-ink-muted">
+              Current daily limit:{" "}
+              <span className="font-tabular font-medium text-ink">{formatCurrency(current.dailyLimit)}</span>
             </p>
 
             <div className="space-y-1.5">
@@ -115,9 +116,10 @@ export default function IncreaseLimitPage() {
                 value={requestedLimit}
                 onChange={(e) => setRequestedLimit(e.target.value)}
                 placeholder={`More than ${current.dailyLimit}`}
+                className="font-tabular"
               />
               {requestedLimit && !amountValid && (
-                <p className="text-xs text-red-600">Must be more than your current limit.</p>
+                <p className="text-xs text-danger">Must be more than your current limit.</p>
               )}
             </div>
 
@@ -132,12 +134,12 @@ export default function IncreaseLimitPage() {
               />
             </div>
 
-            <label className="flex items-center gap-2 text-sm text-slate-600">
+            <label className="flex items-center gap-2 text-sm text-ink-muted">
               <input
                 type="checkbox"
                 checked={newDevice}
                 onChange={(e) => setNewDevice(e.target.checked)}
-                className="h-4 w-4 rounded border-slate-300 accent-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+                className="h-4 w-4 rounded border-border accent-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               />
               I&apos;m on a new or unrecognized device
             </label>
@@ -157,27 +159,27 @@ export default function IncreaseLimitPage() {
         <Card>
           <CardContent className="space-y-4 p-5">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-medium text-slate-900">Review your request</h2>
+              <h2 className="text-sm font-medium text-ink">Review your request</h2>
               <button
                 type="button"
                 onClick={() => setStep("amount")}
-                className="text-sm font-medium text-blue-600"
+                className="text-sm font-medium text-accent"
               >
                 Edit
               </button>
             </div>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-slate-500">New limit</span>
-                <span className="font-medium text-slate-900">{formatCurrency(amount)}</span>
+                <span className="text-ink-muted">New limit</span>
+                <span className="font-tabular font-medium text-ink">{formatCurrency(amount)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Reason</span>
-                <span className="max-w-[60%] text-right font-medium text-slate-900">{reason}</span>
+                <span className="text-ink-muted">Reason</span>
+                <span className="max-w-[60%] text-right font-medium text-ink">{reason}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Device</span>
-                <span className="font-medium text-slate-900">{newDevice ? "New device" : "Trusted device"}</span>
+                <span className="text-ink-muted">Device</span>
+                <span className="font-medium text-ink">{newDevice ? "New device" : "Trusted device"}</span>
               </div>
             </div>
             <Button className="w-full" disabled={submitMutation.isPending} onClick={handleSubmit}>
@@ -190,17 +192,17 @@ export default function IncreaseLimitPage() {
       {step === "otp" && (
         <Card>
           <CardContent className="space-y-4 p-5 text-center">
-            <ShieldCheck className="mx-auto h-10 w-10 text-blue-600" />
+            <ShieldCheck className="mx-auto h-10 w-10 text-accent" />
             <div>
-              <p className="font-medium text-slate-900">Enter the verification code</p>
-              <p className="text-sm text-slate-500">Sent to your registered number. Check Notifications for the demo code.</p>
+              <p className="font-medium text-ink">Enter the verification code</p>
+              <p className="text-sm text-ink-muted">Sent to your registered number. Check Notifications for the demo code.</p>
             </div>
             <Input
               value={otpCode}
               onChange={(e) => setOtpCode(e.target.value)}
               placeholder="6-digit code"
               inputMode="numeric"
-              className="text-center text-lg tracking-widest"
+              className="font-tabular text-center text-lg tracking-widest"
             />
             <Button className="w-full" disabled={otpCode.length === 0 || otpMutation.isPending} onClick={handleOtpVerify}>
               {otpMutation.isPending ? "Verifying…" : "Verify code"}
@@ -212,10 +214,10 @@ export default function IncreaseLimitPage() {
       {step === "biometric" && (
         <Card>
           <CardContent className="space-y-4 p-5 text-center">
-            <Fingerprint className="mx-auto h-10 w-10 text-blue-600" />
+            <Fingerprint className="mx-auto h-10 w-10 text-accent" />
             <div>
-              <p className="font-medium text-slate-900">Confirm it&apos;s you</p>
-              <p className="text-sm text-slate-500">Use your fingerprint or face to finish verifying this request.</p>
+              <p className="font-medium text-ink">Confirm it&apos;s you</p>
+              <p className="text-sm text-ink-muted">Use your fingerprint or face to finish verifying this request.</p>
             </div>
             <Button className="w-full" disabled={biometricMutation.isPending} onClick={handleBiometricConfirm}>
               {biometricMutation.isPending ? "Confirming…" : "Confirm biometric"}
@@ -227,12 +229,12 @@ export default function IncreaseLimitPage() {
       {step === "done" && request && (
         <Card>
           <CardContent className="space-y-4 p-5 text-center">
-            <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-600" />
+            <CheckCircle2 className="mx-auto h-10 w-10 text-success" />
             <div>
-              <p className="font-medium text-slate-900">
+              <p className="font-medium text-ink">
                 {request.status === "APPROVED" ? "Limit increased" : "Request submitted for review"}
               </p>
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-ink-muted">
                 {request.status === "APPROVED"
                   ? `Your new daily limit is ${formatCurrency(request.requestedLimit)}.`
                   : "We'll notify you once a review is complete."}
