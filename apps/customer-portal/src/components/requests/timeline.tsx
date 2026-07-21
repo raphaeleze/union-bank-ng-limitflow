@@ -1,4 +1,4 @@
-import { Check } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import type { TimelineStepStatus } from "@/lib/types";
@@ -23,6 +23,7 @@ export function Timeline({ steps }: { steps: { label: string; status: TimelineSt
                 )}
               >
                 {isComplete && <Check className="h-3.5 w-3.5" />}
+                {isCurrent && <Loader2 className="h-3.5 w-3.5 motion-safe:animate-spin" />}
               </div>
               {!isLast && (
                 <div

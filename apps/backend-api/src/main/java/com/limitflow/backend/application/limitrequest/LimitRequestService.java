@@ -3,6 +3,7 @@ package com.limitflow.backend.application.limitrequest;
 import com.limitflow.backend.application.audit.AuditService;
 import com.limitflow.backend.application.limitrequest.risk.RiskContext;
 import com.limitflow.backend.application.limitrequest.risk.RiskEngine;
+import com.limitflow.backend.application.notification.NairaFormat;
 import com.limitflow.backend.application.notification.NotificationService;
 import com.limitflow.backend.application.otp.OtpDeliveryService;
 import com.limitflow.backend.application.otp.OtpService;
@@ -177,7 +178,7 @@ public class LimitRequestService {
                 }))
                 .flatMap(saved -> auditService.record(customer, "LIMIT_APPROVED", "LimitRequest", saved.getId().toString())
                         .then(notificationService.send(customer.getId(), NotificationType.LIMIT_APPROVED, "Limit increased",
-                                "Your daily transfer limit is now " + saved.getRequestedLimit()))
+                                "Your daily transfer limit is now " + NairaFormat.format(saved.getRequestedLimit())))
                         .thenReturn(saved));
     }
 

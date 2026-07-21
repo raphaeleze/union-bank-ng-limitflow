@@ -57,8 +57,19 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" autoComplete="email" {...register("email")} />
-            {errors.email && <p className="text-xs text-danger">{errors.email.message}</p>}
+            <Input
+              id="email"
+              type="email"
+              autoComplete="email"
+              aria-invalid={Boolean(errors.email)}
+              aria-describedby={errors.email ? "email-error" : undefined}
+              {...register("email")}
+            />
+            {errors.email && (
+              <p id="email-error" className="text-xs text-danger">
+                {errors.email.message}
+              </p>
+            )}
           </div>
 
           <div className="space-y-1.5">
@@ -67,14 +78,20 @@ export default function LoginPage() {
               id="password"
               type="password"
               autoComplete="current-password"
+              aria-invalid={Boolean(errors.password)}
+              aria-describedby={errors.password ? "password-error" : undefined}
               {...register("password")}
             />
-            {errors.password && <p className="text-xs text-danger">{errors.password.message}</p>}
+            {errors.password && (
+              <p id="password-error" className="text-xs text-danger">
+                {errors.password.message}
+              </p>
+            )}
           </div>
 
           {serverError && <p className="text-sm text-danger">{serverError}</p>}
 
-          <Button type="submit" className="w-full" disabled={isSubmitting}>
+          <Button type="submit" className="w-full" loading={isSubmitting}>
             {isSubmitting ? "Signing in…" : "Sign in"}
           </Button>
         </form>

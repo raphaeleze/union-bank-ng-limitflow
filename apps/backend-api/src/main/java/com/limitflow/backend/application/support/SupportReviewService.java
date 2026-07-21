@@ -1,6 +1,7 @@
 package com.limitflow.backend.application.support;
 
 import com.limitflow.backend.application.audit.AuditService;
+import com.limitflow.backend.application.notification.NairaFormat;
 import com.limitflow.backend.application.notification.NotificationService;
 import com.limitflow.backend.application.otp.OtpService;
 import com.limitflow.backend.domain.account.Account;
@@ -86,7 +87,7 @@ public class SupportReviewService {
                                                     saved.getId().toString()))
                                             .then(notificationService.send(account.getUserId(),
                                                     NotificationType.LIMIT_APPROVED, "Limit increased",
-                                                    "Your daily transfer limit is now " + saved.getRequestedLimit()))
+                                                    "Your daily transfer limit is now " + NairaFormat.format(saved.getRequestedLimit())))
                                             .thenReturn(saved));
                         }));
     }

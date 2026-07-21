@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -179,9 +180,13 @@ export default function IncreaseLimitPage() {
                 onChange={(e) => setRequestedLimit(e.target.value)}
                 placeholder={`More than ${current.dailyLimit}`}
                 className="font-tabular"
+                aria-invalid={Boolean(requestedLimit) && !amountValid}
+                aria-describedby={requestedLimit && !amountValid ? "amount-error" : undefined}
               />
               {requestedLimit && !amountValid && (
-                <p className="text-xs text-danger">Must be more than your current limit.</p>
+                <p id="amount-error" className="text-xs text-danger">
+                  Must be more than your current limit.
+                </p>
               )}
             </div>
 
@@ -197,12 +202,7 @@ export default function IncreaseLimitPage() {
             </div>
 
             <label className="flex items-center gap-2 text-sm text-ink-muted">
-              <input
-                type="checkbox"
-                checked={newDevice}
-                onChange={(e) => setNewDevice(e.target.checked)}
-                className="h-4 w-4 rounded border-border accent-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-              />
+              <Checkbox checked={newDevice} onChange={(e) => setNewDevice(e.target.checked)} />
               I&apos;m on a new or unrecognized device
             </label>
 
@@ -244,7 +244,7 @@ export default function IncreaseLimitPage() {
                 <span className="font-medium text-ink">{newDevice ? "New device" : "Trusted device"}</span>
               </div>
             </div>
-            <Button className="w-full" disabled={submitMutation.isPending} onClick={handleSubmit}>
+            <Button className="w-full" loading={submitMutation.isPending} onClick={handleSubmit}>
               {submitMutation.isPending ? "Submitting…" : "Confirm and submit"}
             </Button>
           </CardContent>
@@ -266,7 +266,12 @@ export default function IncreaseLimitPage() {
               inputMode="numeric"
               className="font-tabular text-center text-lg tracking-widest"
             />
-            <Button className="w-full" disabled={otpCode.length === 0 || otpMutation.isPending} onClick={handleOtpVerify}>
+            <Button
+              className="w-full"
+              disabled={otpCode.length === 0}
+              loading={otpMutation.isPending}
+              onClick={handleOtpVerify}
+            >
               {otpMutation.isPending ? "Verifying…" : "Verify code"}
             </Button>
             <button
@@ -288,7 +293,7 @@ export default function IncreaseLimitPage() {
               <p className="font-medium text-ink">Confirm it&apos;s you</p>
               <p className="text-sm text-ink-muted">Use your fingerprint or face to finish verifying this request.</p>
             </div>
-            <Button className="w-full" disabled={biometricMutation.isPending} onClick={handleBiometricConfirm}>
+            <Button className="w-full" loading={biometricMutation.isPending} onClick={handleBiometricConfirm}>
               {biometricMutation.isPending ? "Confirming…" : "Confirm biometric"}
             </Button>
             <button
@@ -314,7 +319,7 @@ export default function IncreaseLimitPage() {
             <Button variant="ghost" onClick={() => setCancelConfirmOpen(false)}>
               Keep request
             </Button>
-            <Button variant="destructive" disabled={cancelMutation.isPending} onClick={handleCancel}>
+            <Button variant="destructive" loading={cancelMutation.isPending} onClick={handleCancel}>
               {cancelMutation.isPending ? "Cancelling…" : "Cancel request"}
             </Button>
           </DialogFooter>

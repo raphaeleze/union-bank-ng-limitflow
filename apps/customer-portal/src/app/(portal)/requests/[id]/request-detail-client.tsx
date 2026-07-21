@@ -128,7 +128,7 @@ export function RequestDetailClient({ requestId }: { requestId: string }) {
             <Button variant="ghost" onClick={() => setCancelConfirmOpen(false)}>
               Keep request
             </Button>
-            <Button variant="destructive" disabled={cancelMutation.isPending} onClick={handleCancel}>
+            <Button variant="destructive" loading={cancelMutation.isPending} onClick={handleCancel}>
               {cancelMutation.isPending ? "Cancelling…" : "Cancel request"}
             </Button>
           </DialogFooter>
