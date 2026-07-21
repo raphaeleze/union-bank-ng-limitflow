@@ -8,6 +8,7 @@ const LABELS: Record<RequestStatus, string> = {
   UNDER_REVIEW: "Under review",
   APPROVED: "Approved",
   REJECTED: "Rejected",
+  CANCELLED: "Cancelled",
 };
 
 const VARIANTS: Record<RequestStatus, "neutral" | "blue" | "green" | "orange" | "red"> = {
@@ -17,6 +18,7 @@ const VARIANTS: Record<RequestStatus, "neutral" | "blue" | "green" | "orange" | 
   UNDER_REVIEW: "orange",
   APPROVED: "green",
   REJECTED: "red",
+  CANCELLED: "neutral",
 };
 
 export function StatusBadge({ status }: { status: RequestStatus }) {

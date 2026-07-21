@@ -6,7 +6,8 @@ export type RequestStatus =
   | "BIOMETRIC_PENDING"
   | "UNDER_REVIEW"
   | "APPROVED"
-  | "REJECTED";
+  | "REJECTED"
+  | "CANCELLED";
 
 export type RiskLevel = "LOW" | "MEDIUM" | "HIGH";
 

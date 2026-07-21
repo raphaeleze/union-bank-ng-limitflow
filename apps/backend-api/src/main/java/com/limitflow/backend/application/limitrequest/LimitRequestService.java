@@ -108,6 +108,20 @@ public class LimitRequestService {
                         .then(assessRisk(customer, limitRequest)));
     }
 
+    public Mono<LimitRequest> cancel(User customer, UUID requestId) {
+        return ownedRequest(customer, requestId)
+                .flatMap(limitRequest -> {
+                    if (!RequestStatus.ACTIVE.contains(limitRequest.getStatus())) {
+                        return Mono.error(new ValidationException("This request can no longer be cancelled"));
+                    }
+                    limitRequest.transitionTo(RequestStatus.CANCELLED);
+                    return limitRequestRepository.save(limitRequest);
+                })
+                .flatMap(limitRequest -> auditService.record(customer, "REQUEST_CANCELLED", "LimitRequest",
+                                limitRequest.getId().toString())
+                        .thenReturn(limitRequest));
+    }
+
     public Flux<LimitRequest> history(User customer, UUID accountId) {
         return ownedAccount(customer, accountId)
                 .flatMapMany(account -> limitRequestRepository.findByAccountIdOrderByCreatedAtDesc(account.getId()));

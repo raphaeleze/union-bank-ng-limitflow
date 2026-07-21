@@ -54,6 +54,11 @@ public class LimitRequestController implements LimitRequestApi {
     }
 
     @Override
+    public Mono<LimitRequestResponse> cancel(User user, UUID id) {
+        return limitRequestService.cancel(user, id).map(LimitRequestResponse::from);
+    }
+
+    @Override
     public Flux<LimitRequestResponse> history(User user) {
         return customerService.primaryAccount(user)
                 .flatMapMany(account -> limitRequestService.history(user, account.getId()))

@@ -48,3 +48,14 @@ export function useVerifyBiometricMutation() {
     onSuccess: () => invalidateLimits(queryClient),
   });
 }
+
+export function useCancelLimitRequestMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (requestId: string) => {
+      const response = await apiClient.post<LimitRequest>(`/limits/${requestId}/cancel`, {});
+      return response.data;
+    },
+    onSuccess: () => invalidateLimits(queryClient),
+  });
+}

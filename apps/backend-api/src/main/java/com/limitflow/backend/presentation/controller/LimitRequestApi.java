@@ -34,6 +34,9 @@ public interface LimitRequestApi {
     Mono<LimitRequestResponse> verifyBiometric(@AuthenticationPrincipal User user, @PathVariable UUID id,
                                                 @Valid @RequestBody BiometricVerifyRequest request);
 
+    @PostMapping("/{id}/cancel")
+    Mono<LimitRequestResponse> cancel(@AuthenticationPrincipal User user, @PathVariable UUID id);
+
     @GetMapping("/history")
     Flux<LimitRequestResponse> history(@AuthenticationPrincipal User user);
 

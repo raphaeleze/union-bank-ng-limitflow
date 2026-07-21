@@ -6,12 +6,21 @@ import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
 import { useCurrentLimitQuery } from "@/hooks/use-dashboard";
 import {
+  useCancelLimitRequestMutation,
   useSubmitLimitRequestMutation,
   useVerifyBiometricMutation,
   useVerifyOtpMutation,
@@ -21,6 +30,11 @@ import { formatCurrency } from "@/lib/currency";
 import type { LimitRequest } from "@/lib/types";
 
 type Step = "amount" | "review" | "otp" | "biometric" | "done";
+
+const RESUMABLE_STEP: Partial<Record<LimitRequest["status"], Step>> = {
+  OTP_PENDING: "otp",
+  BIOMETRIC_PENDING: "biometric",
+};
 
 export default function IncreaseLimitPage() {
   const router = useRouter();
@@ -33,23 +47,45 @@ export default function IncreaseLimitPage() {
   const [newDevice, setNewDevice] = useState(false);
   const [otpCode, setOtpCode] = useState("");
   const [request, setRequest] = useState<LimitRequest | null>(null);
+  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
 
   const submitMutation = useSubmitLimitRequestMutation();
   const otpMutation = useVerifyOtpMutation();
   const biometricMutation = useVerifyBiometricMutation();
+  const cancelMutation = useCancelLimitRequestMutation();
 
-  // Reachable directly via the bottom nav even with a request already in flight —
-  // redirect to it instead of letting the customer fill out the whole form only to
-  // have the backend reject the submission (an account can only have one active
-  // request at a time).
-  const hasActiveRequest = Boolean(current?.activeRequest) && !request;
+  // Reachable directly via the bottom nav even with a request already in flight. A request
+  // still awaiting OTP or biometric verification resumes right where it left off instead of
+  // stranding the customer with no way back into the flow; anything else (already submitted
+  // for review) has nothing left to resume, so send them to its status page instead.
+  const activeRequest = current?.activeRequest ?? null;
+  const resumableStep = activeRequest ? RESUMABLE_STEP[activeRequest.status] : undefined;
+  const shouldRedirectToDetail = Boolean(activeRequest) && !resumableStep && !request;
+
+  const effectiveRequest = request ?? (resumableStep ? activeRequest : null);
+  const effectiveStep: Step = request ? step : (resumableStep ?? step);
+
   useEffect(() => {
-    if (hasActiveRequest) {
-      router.replace(`/requests/${current!.activeRequest!.id}`);
+    if (shouldRedirectToDetail) {
+      router.replace(`/requests/${activeRequest!.id}`);
     }
-  }, [hasActiveRequest, current, router]);
+  }, [shouldRedirectToDetail, activeRequest, router]);
 
-  if (isLoading || !current || hasActiveRequest) {
+  async function handleCancel() {
+    if (!effectiveRequest) return;
+    try {
+      await cancelMutation.mutateAsync(effectiveRequest.id);
+      setCancelConfirmOpen(false);
+      setRequest(null);
+      setOtpCode("");
+      setStep("amount");
+      toast("Request cancelled.");
+    } catch (error) {
+      toast(error instanceof ApiError ? error.message : "Couldn't cancel this request.", "error");
+    }
+  }
+
+  if (isLoading || !current || shouldRedirectToDetail) {
     return <p className="text-sm text-ink-muted">Loading…</p>;
   }
 
@@ -73,9 +109,9 @@ export default function IncreaseLimitPage() {
   }
 
   async function handleOtpVerify() {
-    if (!request) return;
+    if (!effectiveRequest) return;
     try {
-      const result = await otpMutation.mutateAsync({ requestId: request.id, code: otpCode });
+      const result = await otpMutation.mutateAsync({ requestId: effectiveRequest.id, code: otpCode });
       setRequest(result);
       setStep("biometric");
     } catch (error) {
@@ -84,9 +120,9 @@ export default function IncreaseLimitPage() {
   }
 
   async function handleBiometricConfirm() {
-    if (!request) return;
+    if (!effectiveRequest) return;
     try {
-      const result = await biometricMutation.mutateAsync({ requestId: request.id, success: true });
+      const result = await biometricMutation.mutateAsync({ requestId: effectiveRequest.id, success: true });
       setRequest(result);
       setStep("done");
     } catch (error) {
@@ -98,7 +134,7 @@ export default function IncreaseLimitPage() {
     <div className="space-y-4">
       <h1 className="text-xl font-semibold text-ink">Increase your limit</h1>
 
-      {step === "amount" && (
+      {effectiveStep === "amount" && (
         <Card>
           <CardContent className="space-y-4 p-5">
             <p className="text-sm text-ink-muted">
@@ -155,7 +191,7 @@ export default function IncreaseLimitPage() {
         </Card>
       )}
 
-      {step === "review" && (
+      {effectiveStep === "review" && (
         <Card>
           <CardContent className="space-y-4 p-5">
             <div className="flex items-center justify-between">
@@ -189,7 +225,7 @@ export default function IncreaseLimitPage() {
         </Card>
       )}
 
-      {step === "otp" && (
+      {effectiveStep === "otp" && (
         <Card>
           <CardContent className="space-y-4 p-5 text-center">
             <ShieldCheck className="mx-auto h-10 w-10 text-accent" />
@@ -207,11 +243,18 @@ export default function IncreaseLimitPage() {
             <Button className="w-full" disabled={otpCode.length === 0 || otpMutation.isPending} onClick={handleOtpVerify}>
               {otpMutation.isPending ? "Verifying…" : "Verify code"}
             </Button>
+            <button
+              type="button"
+              onClick={() => setCancelConfirmOpen(true)}
+              className="text-sm font-medium text-danger"
+            >
+              Cancel request
+            </button>
           </CardContent>
         </Card>
       )}
 
-      {step === "biometric" && (
+      {effectiveStep === "biometric" && (
         <Card>
           <CardContent className="space-y-4 p-5 text-center">
             <Fingerprint className="mx-auto h-10 w-10 text-accent" />
@@ -222,9 +265,35 @@ export default function IncreaseLimitPage() {
             <Button className="w-full" disabled={biometricMutation.isPending} onClick={handleBiometricConfirm}>
               {biometricMutation.isPending ? "Confirming…" : "Confirm biometric"}
             </Button>
+            <button
+              type="button"
+              onClick={() => setCancelConfirmOpen(true)}
+              className="text-sm font-medium text-danger"
+            >
+              Cancel request
+            </button>
           </CardContent>
         </Card>
       )}
+
+      <Dialog open={cancelConfirmOpen} onOpenChange={setCancelConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel this request?</DialogTitle>
+            <DialogDescription>
+              You&apos;ll need to start a new request from scratch if you change your mind. This can&apos;t be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setCancelConfirmOpen(false)}>
+              Keep request
+            </Button>
+            <Button variant="destructive" disabled={cancelMutation.isPending} onClick={handleCancel}>
+              {cancelMutation.isPending ? "Cancelling…" : "Cancel request"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {step === "done" && request && (
         <Card>

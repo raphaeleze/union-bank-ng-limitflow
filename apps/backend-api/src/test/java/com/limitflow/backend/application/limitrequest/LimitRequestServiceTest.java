@@ -162,6 +162,37 @@ class LimitRequestServiceTest {
         verify(accountRepository, never()).save(any());
     }
 
+    @Test
+    void cancelMarksAnActiveRequestCancelled() {
+        LimitRequest limitRequest = new LimitRequest(account.getId(), BigDecimal.valueOf(200_000),
+                BigDecimal.valueOf(300_000), "reason", true);
+        setId(limitRequest, UUID.randomUUID());
+        limitRequest.transitionTo(RequestStatus.OTP_PENDING);
+
+        when(limitRequestRepository.findById(limitRequest.getId())).thenReturn(Mono.just(limitRequest));
+        when(accountRepository.findById(account.getId())).thenReturn(Mono.just(account));
+
+        LimitRequest result = service.cancel(customer, limitRequest.getId()).block();
+
+        assertThat(result.getStatus()).isEqualTo(RequestStatus.CANCELLED);
+    }
+
+    @Test
+    void cancelRejectsARequestThatIsAlreadyResolved() {
+        LimitRequest limitRequest = new LimitRequest(account.getId(), BigDecimal.valueOf(200_000),
+                BigDecimal.valueOf(300_000), "reason", true);
+        setId(limitRequest, UUID.randomUUID());
+        limitRequest.transitionTo(RequestStatus.APPROVED);
+
+        when(limitRequestRepository.findById(limitRequest.getId())).thenReturn(Mono.just(limitRequest));
+        when(accountRepository.findById(account.getId())).thenReturn(Mono.just(account));
+
+        StepVerifier.create(service.cancel(customer, limitRequest.getId()))
+                .verifyError(ValidationException.class);
+
+        verify(limitRequestRepository, never()).save(any());
+    }
+
     private User newUser(UUID id, Role role) {
         User user = mock(User.class, withSettings().lenient());
         when(user.getId()).thenReturn(id);
