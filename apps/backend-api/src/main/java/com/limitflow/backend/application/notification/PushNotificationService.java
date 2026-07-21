@@ -1,7 +1,6 @@
 package com.limitflow.backend.application.notification;
 
 import com.limitflow.backend.domain.push.PushTokenRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
