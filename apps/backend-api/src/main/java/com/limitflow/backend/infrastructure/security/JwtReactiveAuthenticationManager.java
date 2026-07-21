@@ -1,6 +1,7 @@
 package com.limitflow.backend.infrastructure.security;
 
 import com.limitflow.backend.domain.user.UserRepository;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -26,7 +27,8 @@ public class JwtReactiveAuthenticationManager implements ReactiveAuthenticationM
     public Mono<Authentication> authenticate(Authentication authentication) {
         UUID userId = (UUID) authentication.getPrincipal();
         return userRepository.findById(userId)
-                .map(user -> new UsernamePasswordAuthenticationToken(user, null,
-                        List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()))));
+                .<Authentication>map(user -> new UsernamePasswordAuthenticationToken(user, null,
+                        List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()))))
+                .switchIfEmpty(Mono.error(new BadCredentialsException("User for token no longer exists: " + userId)));
     }
 }
