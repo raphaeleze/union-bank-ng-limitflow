@@ -12,8 +12,8 @@ export function RequestListItem({ request }: { request: LimitRequest }) {
       className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
     >
       <div>
-        <p className="text-sm font-medium text-slate-900">{formatCurrency(request.requestedLimit)}</p>
-        <p className="text-xs text-slate-500">
+        <p className="font-tabular text-sm font-medium text-ink">{formatCurrency(request.requestedLimit)}</p>
+        <p className="text-xs text-ink-muted">
           {formatDistanceToNow(new Date(request.createdAt), { addSuffix: true })}
         </p>
       </div>

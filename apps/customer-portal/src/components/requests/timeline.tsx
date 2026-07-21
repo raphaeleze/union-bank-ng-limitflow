@@ -17,9 +17,9 @@ export function Timeline({ steps }: { steps: { label: string; status: TimelineSt
               <div
                 className={cn(
                   "flex h-6 w-6 items-center justify-center rounded-full border-2",
-                  isComplete && "border-emerald-500 bg-emerald-500 text-white",
-                  isCurrent && "border-blue-600 bg-blue-600 text-white",
-                  !isComplete && !isCurrent && "border-slate-300 bg-white",
+                  isComplete && "border-success bg-success text-white",
+                  isCurrent && "border-accent bg-accent text-white",
+                  !isComplete && !isCurrent && "border-border bg-card",
                 )}
               >
                 {isComplete && <Check className="h-3.5 w-3.5" />}
@@ -28,12 +28,12 @@ export function Timeline({ steps }: { steps: { label: string; status: TimelineSt
                 <div
                   className={cn(
                     "w-0.5 flex-1",
-                    isComplete ? "bg-emerald-500" : "bg-slate-200",
+                    isComplete ? "bg-success" : "bg-border",
                   )}
                 />
               )}
             </div>
-            <div className={cn("pb-6 text-sm", isCurrent ? "font-semibold text-slate-900" : "text-slate-600")}>
+            <div className={cn("pb-6 text-sm", isCurrent ? "font-semibold text-ink" : "text-ink-muted")}>
               {step.label}
             </div>
           </li>
