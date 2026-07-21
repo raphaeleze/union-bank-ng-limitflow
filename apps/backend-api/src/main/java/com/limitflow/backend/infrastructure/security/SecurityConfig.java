@@ -5,6 +5,7 @@ import com.limitflow.backend.domain.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
@@ -37,6 +38,10 @@ public class SecurityConfig {
         return http
                 .csrf(csrf -> csrf.disable())
                 .authorizeExchange(auth -> auth
+                        // CORS preflight requests carry no Authorization header by design; without this,
+                        // .anyExchange().authenticated() below rejects them with 401 before the actual
+                        // CorsWebFilter (see CorsConfig) ever gets a chance to answer them.
+                        .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .pathMatchers("/api/auth/**").permitAll()
                         .pathMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .pathMatchers("/actuator/health").permitAll()
