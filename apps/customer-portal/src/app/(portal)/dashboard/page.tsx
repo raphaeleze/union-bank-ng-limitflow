@@ -18,8 +18,8 @@ export default function DashboardPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-xl font-semibold text-slate-900">Hi, {user?.firstName}</h1>
-        <p className="text-sm text-slate-500">Here&apos;s your account at a glance.</p>
+        <h1 className="text-xl font-semibold text-ink">Hi, {user?.firstName}</h1>
+        <p className="text-sm text-ink-muted">Here&apos;s your account at a glance.</p>
       </div>
 
       {isLoading ? (
@@ -30,8 +30,8 @@ export default function DashboardPage() {
       ) : isError || !data ? (
         <Card>
           <CardContent className="flex items-center justify-between p-6">
-            <p className="text-sm text-slate-500">We couldn&apos;t load your account.</p>
-            <button onClick={() => refetch()} className="text-sm font-medium text-blue-600">
+            <p className="text-sm text-ink-muted">We couldn&apos;t load your account.</p>
+            <button onClick={() => refetch()} className="text-sm font-medium text-accent">
               Try again
             </button>
           </CardContent>
