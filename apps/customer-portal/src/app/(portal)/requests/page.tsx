@@ -10,7 +10,7 @@ export default function RequestsPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold text-slate-900">Your requests</h1>
+      <h1 className="text-xl font-semibold text-ink">Your requests</h1>
 
       {isLoading ? (
         <div className="space-y-3">
@@ -21,21 +21,21 @@ export default function RequestsPage() {
       ) : isError ? (
         <Card>
           <CardContent className="flex items-center justify-between p-6">
-            <p className="text-sm text-slate-500">We couldn&apos;t load your requests.</p>
-            <button onClick={() => refetch()} className="text-sm font-medium text-blue-600">
+            <p className="text-sm text-ink-muted">We couldn&apos;t load your requests.</p>
+            <button onClick={() => refetch()} className="text-sm font-medium text-accent">
               Try again
             </button>
           </CardContent>
         </Card>
       ) : !data || data.length === 0 ? (
         <Card>
-          <CardContent className="p-6 text-center text-sm text-slate-500">
+          <CardContent className="p-6 text-center text-sm text-ink-muted">
             You haven&apos;t requested a limit increase yet.
           </CardContent>
         </Card>
       ) : (
         <Card>
-          <CardContent className="divide-y divide-slate-100 p-5">
+          <CardContent className="divide-y divide-border p-5">
             {data.map((request) => (
               <RequestListItem key={request.id} request={request} />
             ))}

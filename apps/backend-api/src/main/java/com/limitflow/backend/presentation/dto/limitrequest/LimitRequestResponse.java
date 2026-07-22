@@ -24,7 +24,7 @@ public record LimitRequestResponse(
     public static LimitRequestResponse from(LimitRequest request) {
         return new LimitRequestResponse(
                 request.getId(),
-                request.getAccount().getId(),
+                request.getAccountId(),
                 request.getCurrentLimit(),
                 request.getRequestedLimit(),
                 request.getReason(),
@@ -44,9 +44,14 @@ public record LimitRequestResponse(
                 : status == RequestStatus.BIOMETRIC_PENDING ? "CURRENT" : "PENDING";
         String riskStatus = request.getRiskLevel() != null ? "COMPLETE" : "PENDING";
         String decisionStatus = switch (status) {
-            case APPROVED, REJECTED -> "COMPLETE";
+            case APPROVED, REJECTED, CANCELLED -> "COMPLETE";
             case UNDER_REVIEW -> "CURRENT";
             default -> "PENDING";
+        };
+        String decisionLabel = switch (status) {
+            case REJECTED -> "Rejected";
+            case CANCELLED -> "Cancelled";
+            default -> "Approved";
         };
 
         return List.of(
@@ -54,7 +59,7 @@ public record LimitRequestResponse(
                 new TimelineStepResponse("OTP Verified", otpStatus),
                 new TimelineStepResponse("Biometric Verified", biometricStatus),
                 new TimelineStepResponse("Risk Assessment", riskStatus),
-                new TimelineStepResponse(status == RequestStatus.REJECTED ? "Rejected" : "Approved", decisionStatus)
+                new TimelineStepResponse(decisionLabel, decisionStatus)
         );
     }
 }

@@ -1,11 +1,12 @@
 package com.limitflow.backend.domain.otp;
 
-import java.util.Optional;
+import reactor.core.publisher.Mono;
+
 import java.util.UUID;
 
 public interface OtpCodeRepository {
 
-    OtpCode save(OtpCode otpCode);
+    <S extends OtpCode> Mono<S> save(S otpCode);
 
-    Optional<OtpCode> findTopByLimitRequestIdOrderByCreatedAtDesc(UUID limitRequestId);
+    Mono<OtpCode> findTopByLimitRequestIdOrderByCreatedAtDesc(UUID limitRequestId);
 }

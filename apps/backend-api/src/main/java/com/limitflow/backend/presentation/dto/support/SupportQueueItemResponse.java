@@ -16,10 +16,10 @@ public record SupportQueueItemResponse(
         Instant createdAt
 ) {
 
-    public static SupportQueueItemResponse from(LimitRequest request) {
+    public static SupportQueueItemResponse from(LimitRequest request, String customerName) {
         return new SupportQueueItemResponse(
                 request.getId(),
-                request.getAccount().getUser().fullName(),
+                customerName,
                 request.getCurrentLimit(),
                 request.getRequestedLimit(),
                 request.getRiskLevel() != null ? request.getRiskLevel().name() : null,

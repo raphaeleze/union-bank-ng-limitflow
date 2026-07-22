@@ -13,19 +13,20 @@ import com.limitflow.backend.domain.limitrequest.RiskLevel;
 import com.limitflow.backend.domain.support.SupportNoteRepository;
 import com.limitflow.backend.domain.user.Role;
 import com.limitflow.backend.domain.user.User;
+import com.limitflow.backend.domain.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -38,6 +39,8 @@ class SupportReviewServiceTest {
     private AccountRepository accountRepository;
     @Mock
     private SupportNoteRepository supportNoteRepository;
+    @Mock
+    private UserRepository userRepository;
     @Mock
     private NotificationService notificationService;
     @Mock
@@ -52,24 +55,28 @@ class SupportReviewServiceTest {
     @BeforeEach
     void setUp() {
         service = new SupportReviewService(limitRequestRepository, accountRepository, supportNoteRepository,
-                notificationService, auditService, otpService);
+                userRepository, notificationService, auditService, otpService);
 
         supportAgent = newUser(Role.SUPPORT_AGENT);
         manager = newUser(Role.MANAGER);
 
         lenient().when(limitRequestRepository.save(any(LimitRequest.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+                .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
         lenient().when(accountRepository.save(any(Account.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+                .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+        lenient().when(auditService.record(any(), anyString(), anyString(), anyString()))
+                .thenReturn(Mono.empty());
+        lenient().when(notificationService.send(any(UUID.class), any(), anyString(), anyString()))
+                .thenReturn(Mono.empty());
     }
 
     @Test
     void supportAgentCannotApproveAHighRiskRequest() {
         LimitRequest limitRequest = underReviewRequest(RiskLevel.HIGH);
-        when(limitRequestRepository.findById(limitRequest.getId())).thenReturn(Optional.of(limitRequest));
+        when(limitRequestRepository.findById(limitRequest.getId())).thenReturn(Mono.just(limitRequest));
 
-        assertThatThrownBy(() -> service.approve(supportAgent, limitRequest.getId(), null))
-                .isInstanceOf(ForbiddenException.class);
+        StepVerifier.create(service.approve(supportAgent, limitRequest.getId(), null))
+                .verifyError(ForbiddenException.class);
 
         verify(accountRepository, never()).save(any());
     }
@@ -77,33 +84,40 @@ class SupportReviewServiceTest {
     @Test
     void managerCannotApproveAMediumRiskRequest() {
         LimitRequest limitRequest = underReviewRequest(RiskLevel.MEDIUM);
-        when(limitRequestRepository.findById(limitRequest.getId())).thenReturn(Optional.of(limitRequest));
+        when(limitRequestRepository.findById(limitRequest.getId())).thenReturn(Mono.just(limitRequest));
 
-        assertThatThrownBy(() -> service.approve(manager, limitRequest.getId(), null))
-                .isInstanceOf(ForbiddenException.class);
+        StepVerifier.create(service.approve(manager, limitRequest.getId(), null))
+                .verifyError(ForbiddenException.class);
     }
 
     @Test
     void supportAgentCanApproveAMediumRiskRequest() {
         LimitRequest limitRequest = underReviewRequest(RiskLevel.MEDIUM);
-        when(limitRequestRepository.findById(limitRequest.getId())).thenReturn(Optional.of(limitRequest));
+        when(limitRequestRepository.findById(limitRequest.getId())).thenReturn(Mono.just(limitRequest));
+        when(accountRepository.findById(limitRequest.getAccountId())).thenReturn(Mono.just(
+                accountFor(limitRequest.getAccountId())));
 
-        LimitRequest result = service.approve(supportAgent, limitRequest.getId(), null);
+        LimitRequest result = service.approve(supportAgent, limitRequest.getId(), null).block();
 
         assertThat(result.getStatus()).isEqualTo(RequestStatus.APPROVED);
     }
 
     private LimitRequest underReviewRequest(RiskLevel riskLevel) {
-        Account account = new Account(mock(User.class), "0123456789",
-                BigDecimal.valueOf(200_000), BigDecimal.valueOf(180_000));
-        setId(account, UUID.randomUUID());
+        UUID accountId = UUID.randomUUID();
 
-        LimitRequest limitRequest = new LimitRequest(account, BigDecimal.valueOf(200_000),
+        LimitRequest limitRequest = new LimitRequest(accountId, BigDecimal.valueOf(200_000),
                 BigDecimal.valueOf(500_000), "reason", true);
         setId(limitRequest, UUID.randomUUID());
         limitRequest.setRiskLevel(riskLevel);
         limitRequest.transitionTo(RequestStatus.UNDER_REVIEW);
         return limitRequest;
+    }
+
+    private Account accountFor(UUID accountId) {
+        Account account = new Account(UUID.randomUUID(), "0123456789",
+                BigDecimal.valueOf(200_000), BigDecimal.valueOf(180_000));
+        setId(account, accountId);
+        return account;
     }
 
     private User newUser(Role role) {

@@ -18,7 +18,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
   }, [isReady, user, router]);
 
   if (!isReady || !user) {
-    return <div className="flex min-h-screen items-center justify-center text-sm text-slate-500">Loading…</div>;
+    return <div className="flex min-h-screen items-center justify-center text-sm text-ink-muted">Loading…</div>;
   }
 
   return (

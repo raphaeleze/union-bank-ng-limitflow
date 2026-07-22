@@ -1,45 +1,69 @@
 package com.limitflow.backend.domain.otp;
 
-import com.limitflow.backend.domain.limitrequest.LimitRequest;
-import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.PersistenceCreator;
+import org.springframework.data.annotation.Transient;
+import org.springframework.data.domain.Persistable;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.Instant;
 import java.util.UUID;
 
-@Entity
-@Table(name = "otp_codes")
+/**
+ * The {@code id} is client-assigned (not DB-generated), so Spring Data R2DBC can't tell new
+ * from existing rows just by checking for a null id — it would otherwise emit an UPDATE for a
+ * brand-new, never-persisted entity, silently affecting zero rows instead of inserting.
+ * Implementing {@link Persistable} with an explicit {@code isNew} flag fixes that: the business
+ * constructor leaves it {@code true}, while the {@link PersistenceCreator} constructor Spring
+ * Data uses to rehydrate rows read back from the database sets it {@code false}.
+ */
+@Table("otp_codes")
 @Getter
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class OtpCode {
+public class OtpCode implements Persistable<UUID> {
 
     @Id
     private UUID id = UUID.randomUUID();
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "limit_request_id", nullable = false)
-    private LimitRequest limitRequest;
+    @Column("limit_request_id")
+    private UUID limitRequestId;
 
-    @Column(name = "code_hash", nullable = false)
+    @Column("code_hash")
     private String codeHash;
 
-    @Column(name = "expires_at", nullable = false)
+    @Column("expires_at")
     private Instant expiresAt;
 
-    @Column(name = "verified_at")
+    @Column("verified_at")
     private Instant verifiedAt;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column("created_at")
     private Instant createdAt = Instant.now();
 
-    public OtpCode(LimitRequest limitRequest, String codeHash, Instant expiresAt) {
-        this.limitRequest = limitRequest;
+    @Transient
+    private boolean isNew = true;
+
+    public OtpCode(UUID limitRequestId, String codeHash, Instant expiresAt) {
+        this.limitRequestId = limitRequestId;
         this.codeHash = codeHash;
         this.expiresAt = expiresAt;
+    }
+
+    @PersistenceCreator
+    OtpCode(UUID id, UUID limitRequestId, String codeHash, Instant expiresAt, Instant verifiedAt, Instant createdAt) {
+        this.id = id;
+        this.limitRequestId = limitRequestId;
+        this.codeHash = codeHash;
+        this.expiresAt = expiresAt;
+        this.verifiedAt = verifiedAt;
+        this.createdAt = createdAt;
+        this.isNew = false;
     }
 
     public boolean isExpired() {

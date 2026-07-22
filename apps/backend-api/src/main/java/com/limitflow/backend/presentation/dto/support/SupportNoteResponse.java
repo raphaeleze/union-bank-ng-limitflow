@@ -7,10 +7,10 @@ import java.util.UUID;
 
 public record SupportNoteResponse(UUID id, String authorName, String note, Instant createdAt) {
 
-    public static SupportNoteResponse from(SupportNote supportNote) {
+    public static SupportNoteResponse from(SupportNote supportNote, String authorName) {
         return new SupportNoteResponse(
                 supportNote.getId(),
-                supportNote.getAuthor().fullName(),
+                authorName,
                 supportNote.getNote(),
                 supportNote.getCreatedAt());
     }

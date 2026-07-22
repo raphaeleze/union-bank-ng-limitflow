@@ -2,16 +2,26 @@
 
 import { CheckCircle2, Fingerprint, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
 import { useCurrentLimitQuery } from "@/hooks/use-dashboard";
 import {
+  useCancelLimitRequestMutation,
   useSubmitLimitRequestMutation,
   useVerifyBiometricMutation,
   useVerifyOtpMutation,
@@ -19,8 +29,37 @@ import {
 import { ApiError } from "@/lib/api-client";
 import { formatCurrency } from "@/lib/currency";
 import type { LimitRequest } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 type Step = "amount" | "review" | "otp" | "biometric" | "done";
+
+const RESUMABLE_STEP: Partial<Record<LimitRequest["status"], Step>> = {
+  OTP_PENDING: "otp",
+  BIOMETRIC_PENDING: "biometric",
+};
+
+const WIZARD_STEPS: Step[] = ["amount", "review", "otp", "biometric"];
+
+function WizardProgress({ step }: { step: Step }) {
+  const currentIndex = WIZARD_STEPS.indexOf(step);
+  if (currentIndex === -1) return null;
+
+  return (
+    <div className="space-y-1.5">
+      <p className="text-xs font-medium text-ink-muted">
+        Step {currentIndex + 1} of {WIZARD_STEPS.length}
+      </p>
+      <div className="flex gap-1.5">
+        {WIZARD_STEPS.map((s, index) => (
+          <div
+            key={s}
+            className={cn("h-1 flex-1 rounded-full", index <= currentIndex ? "bg-accent" : "bg-border")}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function IncreaseLimitPage() {
   const router = useRouter();
@@ -33,13 +72,46 @@ export default function IncreaseLimitPage() {
   const [newDevice, setNewDevice] = useState(false);
   const [otpCode, setOtpCode] = useState("");
   const [request, setRequest] = useState<LimitRequest | null>(null);
+  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
 
   const submitMutation = useSubmitLimitRequestMutation();
   const otpMutation = useVerifyOtpMutation();
   const biometricMutation = useVerifyBiometricMutation();
+  const cancelMutation = useCancelLimitRequestMutation();
 
-  if (isLoading || !current) {
-    return <p className="text-sm text-slate-500">Loading…</p>;
+  // Reachable directly via the bottom nav even with a request already in flight. A request
+  // still awaiting OTP or biometric verification resumes right where it left off instead of
+  // stranding the customer with no way back into the flow; anything else (already submitted
+  // for review) has nothing left to resume, so send them to its status page instead.
+  const activeRequest = current?.activeRequest ?? null;
+  const resumableStep = activeRequest ? RESUMABLE_STEP[activeRequest.status] : undefined;
+  const shouldRedirectToDetail = Boolean(activeRequest) && !resumableStep && !request;
+
+  const effectiveRequest = request ?? (resumableStep ? activeRequest : null);
+  const effectiveStep: Step = request ? step : (resumableStep ?? step);
+
+  useEffect(() => {
+    if (shouldRedirectToDetail) {
+      router.replace(`/requests/${activeRequest!.id}`);
+    }
+  }, [shouldRedirectToDetail, activeRequest, router]);
+
+  async function handleCancel() {
+    if (!effectiveRequest) return;
+    try {
+      await cancelMutation.mutateAsync(effectiveRequest.id);
+      setCancelConfirmOpen(false);
+      setRequest(null);
+      setOtpCode("");
+      setStep("amount");
+      toast("Request cancelled.");
+    } catch (error) {
+      toast(error instanceof ApiError ? error.message : "Couldn't cancel this request.", "error");
+    }
+  }
+
+  if (isLoading || !current || shouldRedirectToDetail) {
+    return <p className="text-sm text-ink-muted">Loading…</p>;
   }
 
   const amount = Number(requestedLimit);
@@ -62,9 +134,9 @@ export default function IncreaseLimitPage() {
   }
 
   async function handleOtpVerify() {
-    if (!request) return;
+    if (!effectiveRequest) return;
     try {
-      const result = await otpMutation.mutateAsync({ requestId: request.id, code: otpCode });
+      const result = await otpMutation.mutateAsync({ requestId: effectiveRequest.id, code: otpCode });
       setRequest(result);
       setStep("biometric");
     } catch (error) {
@@ -73,9 +145,9 @@ export default function IncreaseLimitPage() {
   }
 
   async function handleBiometricConfirm() {
-    if (!request) return;
+    if (!effectiveRequest) return;
     try {
-      const result = await biometricMutation.mutateAsync({ requestId: request.id, success: true });
+      const result = await biometricMutation.mutateAsync({ requestId: effectiveRequest.id, success: true });
       setRequest(result);
       setStep("done");
     } catch (error) {
@@ -85,13 +157,16 @@ export default function IncreaseLimitPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold text-slate-900">Increase your limit</h1>
+      <h1 className="text-xl font-semibold text-ink">Increase your limit</h1>
 
-      {step === "amount" && (
+      <WizardProgress step={effectiveStep} />
+
+      {effectiveStep === "amount" && (
         <Card>
           <CardContent className="space-y-4 p-5">
-            <p className="text-sm text-slate-500">
-              Current daily limit: <span className="font-medium text-slate-900">{formatCurrency(current.dailyLimit)}</span>
+            <p className="text-sm text-ink-muted">
+              Current daily limit:{" "}
+              <span className="font-tabular font-medium text-ink">{formatCurrency(current.dailyLimit)}</span>
             </p>
 
             <div className="space-y-1.5">
@@ -104,9 +179,14 @@ export default function IncreaseLimitPage() {
                 value={requestedLimit}
                 onChange={(e) => setRequestedLimit(e.target.value)}
                 placeholder={`More than ${current.dailyLimit}`}
+                className="font-tabular"
+                aria-invalid={Boolean(requestedLimit) && !amountValid}
+                aria-describedby={requestedLimit && !amountValid ? "amount-error" : undefined}
               />
               {requestedLimit && !amountValid && (
-                <p className="text-xs text-red-600">Must be more than your current limit.</p>
+                <p id="amount-error" className="text-xs text-danger">
+                  Must be more than your current limit.
+                </p>
               )}
             </div>
 
@@ -121,13 +201,8 @@ export default function IncreaseLimitPage() {
               />
             </div>
 
-            <label className="flex items-center gap-2 text-sm text-slate-600">
-              <input
-                type="checkbox"
-                checked={newDevice}
-                onChange={(e) => setNewDevice(e.target.checked)}
-                className="h-4 w-4 rounded border-slate-300 accent-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
-              />
+            <label className="flex items-center gap-2 text-sm text-ink-muted">
+              <Checkbox checked={newDevice} onChange={(e) => setNewDevice(e.target.checked)} />
               I&apos;m on a new or unrecognized device
             </label>
 
@@ -142,89 +217,132 @@ export default function IncreaseLimitPage() {
         </Card>
       )}
 
-      {step === "review" && (
+      {effectiveStep === "review" && (
         <Card>
           <CardContent className="space-y-4 p-5">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-medium text-slate-900">Review your request</h2>
+              <h2 className="text-sm font-medium text-ink">Review your request</h2>
               <button
                 type="button"
                 onClick={() => setStep("amount")}
-                className="text-sm font-medium text-blue-600"
+                className="text-sm font-medium text-accent"
               >
                 Edit
               </button>
             </div>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-slate-500">New limit</span>
-                <span className="font-medium text-slate-900">{formatCurrency(amount)}</span>
+                <span className="text-ink-muted">New limit</span>
+                <span className="font-tabular font-medium text-ink">{formatCurrency(amount)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Reason</span>
-                <span className="max-w-[60%] text-right font-medium text-slate-900">{reason}</span>
+                <span className="text-ink-muted">Reason</span>
+                <span className="max-w-[60%] text-right font-medium text-ink">{reason}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Device</span>
-                <span className="font-medium text-slate-900">{newDevice ? "New device" : "Trusted device"}</span>
+                <span className="text-ink-muted">Device</span>
+                <span className="font-medium text-ink">{newDevice ? "New device" : "Trusted device"}</span>
               </div>
             </div>
-            <Button className="w-full" disabled={submitMutation.isPending} onClick={handleSubmit}>
+            <Button className="w-full" loading={submitMutation.isPending} onClick={handleSubmit}>
               {submitMutation.isPending ? "Submitting…" : "Confirm and submit"}
             </Button>
           </CardContent>
         </Card>
       )}
 
-      {step === "otp" && (
+      {effectiveStep === "otp" && (
         <Card>
           <CardContent className="space-y-4 p-5 text-center">
-            <ShieldCheck className="mx-auto h-10 w-10 text-blue-600" />
+            <ShieldCheck className="mx-auto h-10 w-10 text-accent" />
             <div>
-              <p className="font-medium text-slate-900">Enter the verification code</p>
-              <p className="text-sm text-slate-500">Sent to your registered number. Check Notifications for the demo code.</p>
+              <p className="font-medium text-ink">Enter the verification code</p>
+              <p className="text-sm text-ink-muted">Sent to your registered number. Check Notifications for the demo code.</p>
             </div>
             <Input
               value={otpCode}
               onChange={(e) => setOtpCode(e.target.value)}
               placeholder="6-digit code"
               inputMode="numeric"
-              className="text-center text-lg tracking-widest"
+              className="font-tabular text-center text-lg tracking-widest"
             />
-            <Button className="w-full" disabled={otpCode.length === 0 || otpMutation.isPending} onClick={handleOtpVerify}>
+            <Button
+              className="w-full"
+              disabled={otpCode.length === 0}
+              loading={otpMutation.isPending}
+              onClick={handleOtpVerify}
+            >
               {otpMutation.isPending ? "Verifying…" : "Verify code"}
             </Button>
+            <button
+              type="button"
+              onClick={() => setCancelConfirmOpen(true)}
+              className="text-sm font-medium text-danger"
+            >
+              Cancel request
+            </button>
           </CardContent>
         </Card>
       )}
 
-      {step === "biometric" && (
+      {effectiveStep === "biometric" && (
         <Card>
           <CardContent className="space-y-4 p-5 text-center">
-            <Fingerprint className="mx-auto h-10 w-10 text-blue-600" />
+            <Fingerprint className="mx-auto h-10 w-10 text-accent" />
             <div>
-              <p className="font-medium text-slate-900">Confirm it&apos;s you</p>
-              <p className="text-sm text-slate-500">Use your fingerprint or face to finish verifying this request.</p>
+              <p className="font-medium text-ink">Confirm it&apos;s you</p>
+              <p className="text-sm text-ink-muted">Use your fingerprint or face to finish verifying this request.</p>
             </div>
-            <Button className="w-full" disabled={biometricMutation.isPending} onClick={handleBiometricConfirm}>
+            <Button className="w-full" loading={biometricMutation.isPending} onClick={handleBiometricConfirm}>
               {biometricMutation.isPending ? "Confirming…" : "Confirm biometric"}
             </Button>
+            <button
+              type="button"
+              onClick={() => setCancelConfirmOpen(true)}
+              className="text-sm font-medium text-danger"
+            >
+              Cancel request
+            </button>
           </CardContent>
         </Card>
       )}
+
+      <Dialog open={cancelConfirmOpen} onOpenChange={setCancelConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel this request?</DialogTitle>
+            <DialogDescription>
+              You&apos;ll need to start a new request from scratch if you change your mind. This can&apos;t be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setCancelConfirmOpen(false)}>
+              Keep request
+            </Button>
+            <Button variant="destructive" loading={cancelMutation.isPending} onClick={handleCancel}>
+              {cancelMutation.isPending ? "Cancelling…" : "Cancel request"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {step === "done" && request && (
         <Card>
           <CardContent className="space-y-4 p-5 text-center">
-            <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-600" />
+            <CheckCircle2 className="mx-auto h-10 w-10 text-success" />
             <div>
-              <p className="font-medium text-slate-900">
+              <p className="font-medium text-ink">
                 {request.status === "APPROVED" ? "Limit increased" : "Request submitted for review"}
               </p>
-              <p className="text-sm text-slate-500">
-                {request.status === "APPROVED"
-                  ? `Your new daily limit is ${formatCurrency(request.requestedLimit)}.`
-                  : "We'll notify you once a review is complete."}
+              <p className="text-sm text-ink-muted">
+                {request.status === "APPROVED" ? (
+                  <>
+                    Your new daily limit is{" "}
+                    <span className="font-tabular">{formatCurrency(request.requestedLimit)}</span>.
+                  </>
+                ) : (
+                  "We'll notify you once a review is complete."
+                )}
               </p>
             </div>
             <Button className="w-full" onClick={() => router.replace(`/requests/${request.id}`)}>

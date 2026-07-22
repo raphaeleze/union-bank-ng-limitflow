@@ -9,7 +9,8 @@ public enum RequestStatus {
     BIOMETRIC_PENDING,
     UNDER_REVIEW,
     APPROVED,
-    REJECTED;
+    REJECTED,
+    CANCELLED;
 
     /** Statuses where a request is still awaiting some verification or decision. */
     public static final Set<RequestStatus> ACTIVE =

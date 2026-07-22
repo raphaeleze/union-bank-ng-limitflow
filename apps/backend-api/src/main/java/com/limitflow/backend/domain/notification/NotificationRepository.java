@@ -1,11 +1,13 @@
 package com.limitflow.backend.domain.notification;
 
-import java.util.List;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
 import java.util.UUID;
 
 public interface NotificationRepository {
 
-    Notification save(Notification notification);
+    <S extends Notification> Mono<S> save(S notification);
 
-    List<Notification> findByUserIdOrderByCreatedAtDesc(UUID userId);
+    Flux<Notification> findByUserIdOrderByCreatedAtDesc(UUID userId);
 }
