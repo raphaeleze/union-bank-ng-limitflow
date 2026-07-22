@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
 import { apiClient, AUTH_TOKEN_KEY, AUTH_USER_KEY } from "./api-client";
+import { registerForPushNotifications, unregisterForPushNotifications } from "./push";
 import type { LoginResponse, UserSummary } from "./types";
 
 interface AuthContextValue {
@@ -49,9 +50,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await SecureStore.setItemAsync(AUTH_USER_KEY, JSON.stringify(loggedInUser));
     setUser(loggedInUser);
     setIsUnlocked(true);
+    void registerForPushNotifications();
   }, []);
 
   const logout = useCallback(async () => {
+    // Unregister before the token is cleared below — the DELETE call needs the
+    // still-valid token to authenticate against the backend.
+    await unregisterForPushNotifications();
     await SecureStore.deleteItemAsync(AUTH_TOKEN_KEY);
     await SecureStore.deleteItemAsync(AUTH_USER_KEY);
     setUser(null);
