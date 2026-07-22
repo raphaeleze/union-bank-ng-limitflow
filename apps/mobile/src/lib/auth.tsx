@@ -3,7 +3,7 @@ import * as SecureStore from "expo-secure-store";
 import { useRouter } from "expo-router";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
-import { apiClient, AUTH_TOKEN_KEY, AUTH_USER_KEY } from "./api-client";
+import { apiClient, AUTH_TOKEN_KEY, AUTH_USER_KEY, setUnauthorizedHandler } from "./api-client";
 import { registerForPushNotifications, unregisterForPushNotifications } from "./push";
 import type { LoginResponse, UserSummary } from "./types";
 
@@ -37,6 +37,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsReady(true);
     })();
   }, []);
+
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      // Storage is already cleared by the interceptor by the time this fires. Skip
+      // unregisterForPushNotifications() (unlike logout()) — the token is already
+      // gone/invalid, so there's no valid session left to authenticate that DELETE call.
+      setUser(null);
+      setIsUnlocked(false);
+      router.replace("/login");
+    });
+    return () => setUnauthorizedHandler(null);
+  }, [router]);
 
   const login = useCallback(async (email: string, password: string) => {
     const response = await apiClient.post<LoginResponse>("/auth/login", { email, password });

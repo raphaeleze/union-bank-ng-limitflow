@@ -16,6 +16,12 @@ export class ApiError extends Error {
   }
 }
 
+let unauthorizedHandler: (() => void) | null = null;
+
+export function setUnauthorizedHandler(handler: (() => void) | null) {
+  unauthorizedHandler = handler;
+}
+
 export const apiClient = axios.create({
   baseURL: (Constants.expoConfig?.extra?.apiBaseUrl as string) ?? "http://localhost:8080/api",
   headers: { "Content-Type": "application/json" },
@@ -35,9 +41,11 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401) {
       await SecureStore.deleteItemAsync(AUTH_TOKEN_KEY);
       await SecureStore.deleteItemAsync(AUTH_USER_KEY);
-      // Task 6's auth context listens for this via its own 401 handling on each query,
-      // matching the web app's redirect-to-login-on-401 behavior without a global router
-      // reference here (there isn't a `window.location` equivalent to reach for).
+      // Storage is cleared above, but the auth context's in-memory `user` state lives
+      // outside this module. AuthProvider registers a callback here (see
+      // setUnauthorizedHandler in auth.tsx) so it can reset that state and redirect —
+      // there's no `window.location` equivalent to reach for directly from here.
+      unauthorizedHandler?.();
     }
 
     const message =
