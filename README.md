@@ -1,4 +1,4 @@
-# external-union-bank-ng
+# union-bank-ng-limitflow
 
 > Reimagining what a modern digital banking experience could look like after a frustrating real-world customer support experience with Union Bank Nigeria.
 
