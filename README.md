@@ -54,6 +54,21 @@ After more than 14 hours, I still didn't have a resolution.
 
 I reached out through Twitter/X both privately and publicly.
 
+> **[@king_raphaeleze](https://x.com/king_raphaeleze) · 5 Jul 2026**
+> "@UNIONBANK_NG I've called customer care all night and all morning but no pickup and then this WhatsApp chat keeps giving me random ways numbers for 16 hours now"
+>
+> — [view on X](https://x.com/king_raphaeleze/status/2073705202297819391?s=46&t=S6nI_SNt64sm9TpGKh7rkg)
+
+> **[@king_raphaeleze](https://x.com/king_raphaeleze) · 6 Jul 2026**
+> "@UNIONBANK_NG called your customer care line and for 11 mins they didn't pick up while I pay 22 euros because I'm outside the country. Almost 2 day now and I need to get money to someone at the hospital. Now people can lose their lives because of your incompetence"
+>
+> — [view on X](https://x.com/king_raphaeleze/status/2074086387683405886?s=46&t=S6nI_SNt64sm9TpGKh7rkg)
+
+> **[@king_raphaeleze](https://x.com/king_raphaeleze) · 8 Jul 2026**
+> "@UNIONBANK_NG we've done all you asked, the account owner is calling and you're declining the call. The WhatsApp line is connected to an agent but they don't reply. We have someone at the hospital that needs this urgently"
+>
+> — [view on X](https://x.com/king_raphaeleze/status/2074777579249139928?s=46&t=S6nI_SNt64sm9TpGKh7rkg)
+
 Eventually an account manager contacted me.
 
 At that point I thought the issue would finally be resolved.
