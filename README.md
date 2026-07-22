@@ -137,16 +137,40 @@ I want to answer one question:
 
 In-app transfer limit management, secure biometric approvals, OTP-based verification,
 intelligent risk-based routing, case tracking with real-time status updates, unified
-support, and clear audit trails — built as three working applications, not mockups:
+support, and clear audit trails — built as four working applications, not mockups:
 
 * **[LimitFlow customer portal](apps/customer-portal)** (Next.js) — the primary product. A
   customer requests a transfer-limit increase through a five-step flow (choose limit → reason →
   review → OTP → biometric) and either gets an instant decision or a tracked status while
   it's reviewed.
+* **[LimitFlow mobile](apps/mobile)** (Expo / React Native) — the same customer journey on a
+  phone, with the two things a browser demo can't fake: a real Face ID/fingerprint prompt for
+  biometric verification, and real push notifications for OTP codes and status updates.
 * **[LimitFlow backend](apps/backend-api)** (Spring Boot) — Clean Architecture, JWT auth, a
   strategy-pattern risk engine, and full audit logging behind a REST API.
 * **[LimitFlow employee portal](apps/employee-portal)** (Next.js) — what a support agent or
   manager sees when the risk engine routes a request to manual review.
+
+---
+
+# Screenshots
+
+<table>
+<tr>
+<td align="center" width="33%">
+<b>Customer — dashboard</b><br/>
+<img src="docs/screenshots/customer-dashboard.png" alt="Customer portal dashboard showing the gradient daily-transfer-limit card" width="320"/>
+</td>
+<td align="center" width="33%">
+<b>Manager — review queue</b><br/>
+<img src="docs/screenshots/manager-review.jpg" alt="Employee portal manager view reviewing a high-risk limit increase request" width="320"/>
+</td>
+<td align="center" width="33%">
+<b>Mobile — increase-limit flow</b><br/>
+<img src="docs/screenshots/mobile-demo.gif" alt="LimitFlow mobile app walking through the dashboard and increase-limit wizard on a physical iPhone" width="240"/>
+</td>
+</tr>
+</table>
 
 ---
 
@@ -185,6 +209,20 @@ Demo accounts (password `Password123!` for all three):
 | Customer | `customer@limitflow.demo` |
 | Support agent | `support@limitflow.demo` |
 | Manager | `manager@limitflow.demo` |
+
+## Mobile, via Expo Go
+
+The mobile app isn't part of the Docker stack — it needs a live Metro dev server and a real
+phone or simulator, not a container. With the backend running (`docker compose up postgres
+backend-api` from above):
+
+```bash
+cd apps/mobile
+EXPO_PUBLIC_API_BASE_URL=http://<this-machine's-LAN-IP>:8080/api npx expo start
+```
+
+Open the result in Expo Go on a phone on the same Wi-Fi network (same demo customer account
+as above). See [apps/mobile](apps/mobile) for details.
 
 The seeded customer starts at a ₦200,000 daily limit with ₦180,000 used today, and already
 has a ₦500,000 request sitting in the support queue — log in as the customer to see its
