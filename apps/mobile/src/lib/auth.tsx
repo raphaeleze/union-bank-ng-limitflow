@@ -69,11 +69,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsUnlocked(true);
       return true;
     }
-    const result = await LocalAuthentication.authenticateAsync({
-      promptMessage: "Unlock LimitFlow",
-    });
-    setIsUnlocked(result.success);
-    return result.success;
+    try {
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: "Unlock LimitFlow",
+      });
+      setIsUnlocked(result.success);
+      return result.success;
+    } catch {
+      // A native-level throw is rare but must resolve to "not unlocked" rather than reject —
+      // the caller (the (app) gate layout) has no catch of its own and needs a boolean it can
+      // react to, the same as an ordinary failed/cancelled prompt.
+      setIsUnlocked(false);
+      return false;
+    }
   }, []);
 
   const value = useMemo(
