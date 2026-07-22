@@ -2001,20 +2001,32 @@ Full new contents of `apps/mobile/src/app/(app)/_layout.tsx`:
 ```tsx
 import { Bell, ClipboardList, LayoutDashboard, ArrowUpCircle, User } from "lucide-react-native";
 import { Redirect, Tabs } from "expo-router";
-import { useEffect } from "react";
-import { Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import { Pressable, Text, View } from "react-native";
 
 import { Header } from "@/components/layout/header";
 import { useAuth } from "@/lib/auth";
 
 export default function AppGateLayout() {
   const { user, isReady, isUnlocked, unlock } = useAuth();
+  const [unlockFailed, setUnlockFailed] = useState(false);
+
+  async function attemptUnlock() {
+    setUnlockFailed(false);
+    const success = await unlock();
+    if (!success) {
+      setUnlockFailed(true);
+    }
+  }
 
   useEffect(() => {
     if (isReady && user && !isUnlocked) {
-      unlock();
+      attemptUnlock();
     }
-  }, [isReady, user, isUnlocked, unlock]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- attemptUnlock intentionally
+    // omitted, same reasoning as Task 6's original gate: it's re-created every render, and
+    // including it would re-trigger the biometric prompt on every unrelated re-render.
+  }, [isReady, user, isUnlocked]);
 
   if (!isReady) {
     return (
@@ -2032,6 +2044,11 @@ export default function AppGateLayout() {
     return (
       <View className="flex-1 items-center justify-center gap-4 bg-surface px-4 dark:bg-surface-dark">
         <Text className="text-sm text-ink-muted dark:text-ink-muted-dark">Unlock LimitFlow to continue.</Text>
+        {unlockFailed && (
+          <Pressable onPress={attemptUnlock}>
+            <Text className="text-sm font-medium text-accent dark:text-accent-dark">Try again</Text>
+          </Pressable>
+        )}
       </View>
     );
   }
