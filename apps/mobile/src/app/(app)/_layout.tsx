@@ -23,8 +23,8 @@ export default function AppGateLayout() {
       attemptUnlock();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- attemptUnlock intentionally
-    // omitted: it's re-created every render, and including it would re-run this effect (and
-    // re-trigger the biometric prompt) on every unrelated re-render of this component.
+    // omitted, same reasoning as Task 6's original gate: it's re-created every render, and
+    // including it would re-trigger the biometric prompt on every unrelated re-render.
   }, [isReady, user, isUnlocked]);
 
   if (!isReady) {
@@ -42,9 +42,7 @@ export default function AppGateLayout() {
   if (!isUnlocked) {
     return (
       <View className="flex-1 items-center justify-center gap-4 bg-surface px-4 dark:bg-surface-dark">
-        <Text className="text-sm text-ink-muted dark:text-ink-muted-dark">
-          Unlock LimitFlow to continue.
-        </Text>
+        <Text className="text-sm text-ink-muted dark:text-ink-muted-dark">Unlock LimitFlow to continue.</Text>
         {unlockFailed && (
           <Pressable onPress={attemptUnlock}>
             <Text className="text-sm font-medium text-accent dark:text-accent-dark">Try again</Text>
