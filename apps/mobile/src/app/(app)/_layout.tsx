@@ -1,7 +1,9 @@
-import { Redirect, Slot } from "expo-router";
+import { Bell, ClipboardList, LayoutDashboard, ArrowUpCircle, User } from "lucide-react-native";
+import { Redirect, Tabs } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
+import { Header } from "@/components/layout/header";
 import { useAuth } from "@/lib/auth";
 
 export default function AppGateLayout() {
@@ -52,9 +54,24 @@ export default function AppGateLayout() {
     );
   }
 
-  // A layout's default export renders its matched nested route via <Slot />, not a `children`
-  // prop — Expo Router (React Navigation underneath) never passes one; that's a Next.js
-  // App Router convention, not this one. Task 10 replaces this whole function with a real
-  // <Tabs> navigator, which renders its matched screen itself and won't need <Slot /> either.
-  return <Slot />;
+  return (
+    <View className="flex-1 bg-surface dark:bg-surface-dark">
+      <Header />
+      <Tabs
+        screenOptions={{
+          headerShown: false,
+          tabBarActiveTintColor: "#5b3df5",
+          tabBarInactiveTintColor: "#6b6580",
+        }}
+      >
+        <Tabs.Screen name="index" options={{ title: "Home", tabBarIcon: ({ color, size }) => <LayoutDashboard color={color} size={size} /> }} />
+        <Tabs.Screen name="increase-limit" options={{ title: "Increase", tabBarIcon: ({ color, size }) => <ArrowUpCircle color={color} size={size} /> }} />
+        <Tabs.Screen name="requests" options={{ title: "Requests", tabBarIcon: ({ color, size }) => <ClipboardList color={color} size={size} /> }} />
+        <Tabs.Screen name="notifications" options={{ title: "Alerts", tabBarIcon: ({ color, size }) => <Bell color={color} size={size} /> }} />
+        <Tabs.Screen name="profile" options={{ title: "Profile", tabBarIcon: ({ color, size }) => <User color={color} size={size} /> }} />
+        <Tabs.Screen name="support" options={{ href: null }} />
+        <Tabs.Screen name="requests/[id]" options={{ href: null }} />
+      </Tabs>
+    </View>
+  );
 }
