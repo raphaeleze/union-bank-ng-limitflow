@@ -54,6 +54,21 @@ After more than 14 hours, I still didn't have a resolution.
 
 I reached out through Twitter/X both privately and publicly.
 
+> **[@king_raphaeleze](https://x.com/king_raphaeleze) · 5 Jul 2026**
+> "@UNIONBANK_NG I've called customer care all night and all morning but no pickup and then this WhatsApp chat keeps giving me random ways numbers for 16 hours now"
+>
+> — [view on X](https://x.com/king_raphaeleze/status/2073705202297819391?s=46&t=S6nI_SNt64sm9TpGKh7rkg)
+
+> **[@king_raphaeleze](https://x.com/king_raphaeleze) · 6 Jul 2026**
+> "@UNIONBANK_NG called your customer care line and for 11 mins they didn't pick up while I pay 22 euros because I'm outside the country. Almost 2 day now and I need to get money to someone at the hospital. Now people can lose their lives because of your incompetence"
+>
+> — [view on X](https://x.com/king_raphaeleze/status/2074086387683405886?s=46&t=S6nI_SNt64sm9TpGKh7rkg)
+
+> **[@king_raphaeleze](https://x.com/king_raphaeleze) · 8 Jul 2026**
+> "@UNIONBANK_NG we've done all you asked, the account owner is calling and you're declining the call. The WhatsApp line is connected to an agent but they don't reply. We have someone at the hospital that needs this urgently"
+>
+> — [view on X](https://x.com/king_raphaeleze/status/2074777579249139928?s=46&t=S6nI_SNt64sm9TpGKh7rkg)
+
 Eventually an account manager contacted me.
 
 At that point I thought the issue would finally be resolved.
@@ -137,16 +152,40 @@ I want to answer one question:
 
 In-app transfer limit management, secure biometric approvals, OTP-based verification,
 intelligent risk-based routing, case tracking with real-time status updates, unified
-support, and clear audit trails — built as three working applications, not mockups:
+support, and clear audit trails — built as four working applications, not mockups:
 
 * **[LimitFlow customer portal](apps/customer-portal)** (Next.js) — the primary product. A
   customer requests a transfer-limit increase through a five-step flow (choose limit → reason →
   review → OTP → biometric) and either gets an instant decision or a tracked status while
   it's reviewed.
+* **[LimitFlow mobile](apps/mobile)** (Expo / React Native) — the same customer journey on a
+  phone, with the two things a browser demo can't fake: a real Face ID/fingerprint prompt for
+  biometric verification, and real push notifications for OTP codes and status updates.
 * **[LimitFlow backend](apps/backend-api)** (Spring Boot) — Clean Architecture, JWT auth, a
   strategy-pattern risk engine, and full audit logging behind a REST API.
 * **[LimitFlow employee portal](apps/employee-portal)** (Next.js) — what a support agent or
   manager sees when the risk engine routes a request to manual review.
+
+---
+
+# Screenshots
+
+<table>
+<tr>
+<td align="center" width="33%">
+<b>Customer — dashboard</b><br/>
+<img src="docs/screenshots/customer-dashboard.png" alt="Customer portal dashboard showing the gradient daily-transfer-limit card" width="320"/>
+</td>
+<td align="center" width="33%">
+<b>Manager — review queue</b><br/>
+<img src="docs/screenshots/manager-review.jpg" alt="Employee portal manager view reviewing a high-risk limit increase request" width="320"/>
+</td>
+<td align="center" width="33%">
+<b>Mobile — increase-limit flow</b><br/>
+<img src="docs/screenshots/mobile-demo.gif" alt="LimitFlow mobile app walking through the dashboard and increase-limit wizard on a physical iPhone" width="240"/>
+</td>
+</tr>
+</table>
 
 ---
 
@@ -185,6 +224,20 @@ Demo accounts (password `Password123!` for all three):
 | Customer | `customer@limitflow.demo` |
 | Support agent | `support@limitflow.demo` |
 | Manager | `manager@limitflow.demo` |
+
+## Mobile, via Expo Go
+
+The mobile app isn't part of the Docker stack — it needs a live Metro dev server and a real
+phone or simulator, not a container. With the backend running (`docker compose up postgres
+backend-api` from above):
+
+```bash
+cd apps/mobile
+EXPO_PUBLIC_API_BASE_URL=http://<this-machine's-LAN-IP>:8080/api npx expo start
+```
+
+Open the result in Expo Go on a phone on the same Wi-Fi network (same demo customer account
+as above). See [apps/mobile](apps/mobile) for details.
 
 The seeded customer starts at a ₦200,000 daily limit with ₦180,000 used today, and already
 has a ₦500,000 request sitting in the support queue — log in as the customer to see its
