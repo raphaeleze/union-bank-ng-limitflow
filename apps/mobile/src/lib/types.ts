@@ -44,6 +44,15 @@ export interface LimitRequest {
   timeline: TimelineStep[];
 }
 
+export interface AccountSummary {
+  id: string;
+  accountNumber: string;
+  dailyLimit: number;
+  usedToday: number;
+  remaining: number;
+  status: "ACTIVE" | "SUSPENDED";
+}
+
 export interface CurrentLimitResponse {
   accountId: string;
   dailyLimit: number;
