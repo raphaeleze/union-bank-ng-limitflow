@@ -1178,11 +1178,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsUnlocked(true);
       return true;
     }
-    const result = await LocalAuthentication.authenticateAsync({
-      promptMessage: "Unlock LimitFlow",
-    });
-    setIsUnlocked(result.success);
-    return result.success;
+    try {
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: "Unlock LimitFlow",
+      });
+      setIsUnlocked(result.success);
+      return result.success;
+    } catch {
+      // A native-level throw is rare but must resolve to "not unlocked" rather than reject —
+      // the caller (the (app) gate layout) has no catch of its own and needs a boolean it can
+      // react to, the same as an ordinary failed/cancelled prompt.
+      setIsUnlocked(false);
+      return false;
+    }
   }, []);
 
   const value = useMemo(
@@ -1351,20 +1359,32 @@ export default function RootLayout() {
 mobile-only unlock step:
 
 ```tsx
-import { Redirect } from "expo-router";
-import { useEffect } from "react";
-import { Text, View } from "react-native";
+import { Redirect, Slot } from "expo-router";
+import { useEffect, useState } from "react";
+import { Pressable, Text, View } from "react-native";
 
 import { useAuth } from "@/lib/auth";
 
-export default function AppGateLayout({ children }: { children: React.ReactNode }) {
+export default function AppGateLayout() {
   const { user, isReady, isUnlocked, unlock } = useAuth();
+  const [unlockFailed, setUnlockFailed] = useState(false);
+
+  async function attemptUnlock() {
+    setUnlockFailed(false);
+    const success = await unlock();
+    if (!success) {
+      setUnlockFailed(true);
+    }
+  }
 
   useEffect(() => {
     if (isReady && user && !isUnlocked) {
-      unlock();
+      attemptUnlock();
     }
-  }, [isReady, user, isUnlocked, unlock]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- attemptUnlock intentionally
+    // omitted: it's re-created every render, and including it would re-run this effect (and
+    // re-trigger the biometric prompt) on every unrelated re-render of this component.
+  }, [isReady, user, isUnlocked]);
 
   if (!isReady) {
     return (
@@ -1384,17 +1404,32 @@ export default function AppGateLayout({ children }: { children: React.ReactNode 
         <Text className="text-sm text-ink-muted dark:text-ink-muted-dark">
           Unlock LimitFlow to continue.
         </Text>
+        {unlockFailed && (
+          <Pressable onPress={attemptUnlock}>
+            <Text className="text-sm font-medium text-accent dark:text-accent-dark">Try again</Text>
+          </Pressable>
+        )}
       </View>
     );
   }
 
-  return children as React.ReactElement;
+  // A layout's default export renders its matched nested route via <Slot />, not a `children`
+  // prop — Expo Router (React Navigation underneath) never passes one; that's a Next.js
+  // App Router convention, not this one. Task 10 replaces this whole function with a real
+  // <Tabs> navigator, which renders its matched screen itself and won't need <Slot /> either.
+  return <Slot />;
 }
 ```
 
+`unlock()` (from `apps/mobile/src/lib/auth.tsx`, Step 1 above) must wrap its call to
+`LocalAuthentication.authenticateAsync` in a `try/catch`, resolving to `false` on a thrown
+error exactly like a failed/cancelled prompt — a native-level throw here must never leave this
+component's `attemptUnlock` awaiting a rejected promise with no caught state to react to.
+
 Note: this file's real tab-bar content (`Tabs` from `expo-router`) is written in Task 10 — this
-step only establishes the gate itself; Task 10 wraps the gate's rendered children in the actual
-tab navigator rather than replacing this logic.
+step only establishes the gate itself. Task 10 replaces the final `<Slot />` branch with a real
+`<Tabs>` navigator (which renders its own matched screen directly, the same way `<Slot />` does
+here), keeping the loading/redirect/unlock-prompt branches above it unchanged.
 
 - [ ] **Step 4: Move the login route**
 
